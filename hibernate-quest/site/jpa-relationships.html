@@ -1,0 +1,803 @@
+<title>JPA Relationships Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>/* Layout: one reading column (~70ch) that widens into full-width "lab benches" for each interactive part. */
+:root{
+  --bg:#F1F3F6; --surface:#FFFFFF; --sunk:#E7EBF0; --ink:#131B25; --muted:#576373; --line:#D3D9E1;
+  --c1:#4A54CF; --c2:#B8720C; --c3:#1F8A55; --c4:#CF3463; --c5:#0E7C8C; --c6:#8A3FB8;
+  --c1s:#E2E4FA; --c2s:#F6E7CF; --c3s:#D5EFE1; --c4s:#F9DAE3; --c5s:#D3EEF1; --c6s:#EEDFF8;
+  --code-bg:#F7F8FA; --tk-kw:#7A2FB8; --tk-str:#1F7A4A; --tk-com:#7A8594; --tk-num:#B35A00; --tk-fn:#2550C0; --tk-cls:#A0306A;
+  --f-display:'Familjen Grotesk','Segoe UI',system-ui,sans-serif;
+  --f-body:'Atkinson Hyperlegible','Segoe UI',system-ui,sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0C1117; --surface:#141B24; --sunk:#1B2430; --ink:#E4E9EF; --muted:#93A0AF; --line:#2A3441;
+  --c1:#8D95FF; --c2:#ECA944; --c3:#52C889; --c4:#FF6B93; --c5:#4FD0E0; --c6:#C99BFF;
+  --c1s:#232853; --c2s:#3B2C12; --c3s:#153626; --c4s:#431828; --c5s:#0F3439; --c6s:#33204A;
+  --code-bg:#10161E; --tk-kw:#C79BFF; --tk-str:#7FD6A2; --tk-com:#6F7C8C; --tk-num:#F2B266; --tk-fn:#86A9FF; --tk-cls:#F59BC6;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0C1117; --surface:#141B24; --sunk:#1B2430; --ink:#E4E9EF; --muted:#93A0AF; --line:#2A3441;
+  --c1:#8D95FF; --c2:#ECA944; --c3:#52C889; --c4:#FF6B93; --c5:#4FD0E0; --c6:#C99BFF;
+  --c1s:#232853; --c2s:#3B2C12; --c3s:#153626; --c4s:#431828; --c5s:#0F3439; --c6s:#33204A;
+  --code-bg:#10161E; --tk-kw:#C79BFF; --tk-str:#7FD6A2; --tk-com:#6F7C8C; --tk-num:#F2B266; --tk-fn:#86A9FF; --tk-cls:#F59BC6;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+.wrap{max-width:1120px;margin:0 auto}
+.prose{max-width:70ch}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.15;margin:0}
+h1{font-size:clamp(2.2rem,5.5vw,3.6rem);font-weight:700;letter-spacing:-.02em}
+h2{font-size:clamp(1.5rem,3.2vw,2rem);font-weight:700;letter-spacing:-.01em}
+h3{font-size:1.15rem;font-weight:600}
+p{margin:0}
+code,kbd{font-family:var(--f-mono);font-size:.86em}
+:not(pre)>code{background:var(--sunk);padding:.1em .35em;border-radius:4px}
+a{color:var(--c1)}
+section{padding-block:52px 8px;display:grid;gap:18px}
+.eyebrow{font-family:var(--f-mono);font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.lead{font-size:1.12rem;color:var(--muted)}
+.stack{display:grid;gap:14px}
+.note{font-size:.92rem;color:var(--muted)}
+
+header.hero{padding-block:52px 8px;display:grid;gap:22px}
+.hero h1 em{font-style:normal;color:var(--c1)}
+.strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:860px}
+.strip div{border-top:3px solid var(--line);padding-top:10px}
+.strip div:nth-child(1){border-color:var(--c1)} .strip div:nth-child(2){border-color:var(--c2)} .strip div:nth-child(3){border-color:var(--c3)}
+.strip b{font-family:var(--f-display);font-size:1.05rem;display:block}
+.strip span{color:var(--muted);font-size:.95rem}
+.toc{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:.95rem;padding:0;margin:0;list-style:none}
+.toc a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--line)}
+.toc a:hover{color:var(--ink);border-color:var(--ink)}
+.toc .lvl{font-family:var(--f-mono);font-size:.7rem;color:var(--muted);margin-right:4px}
+.series{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:.9rem;color:var(--muted)}
+.series .here{background:var(--ink);color:var(--bg);padding:4px 10px;border-radius:999px;font-weight:700}
+.series a{padding:4px 10px;border:1px solid var(--line);border-radius:999px;text-decoration:none;color:var(--ink)}
+
+.map{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:0;padding:16px 18px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.map dt{font-weight:700}
+.map dd{margin:0;color:var(--muted)}
+.map dd code{color:var(--ink)}
+@media (max-width:560px){.map{grid-template-columns:minmax(0,1fr)}.map dd{margin-bottom:6px}}
+
+button,select,input[type=text]{font:inherit;font-size:.92rem;color:var(--ink)}
+.btn{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;line-height:1.2}
+.btn:hover{border-color:var(--muted)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink);min-width:86px;justify-content:center}
+.btn.sm{padding:4px 9px;font-size:.82rem}
+.btn.on{border-color:var(--c1);background:var(--c1s)}
+.btn:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible,.mm-label:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+select,input[type=text]{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+
+.bench{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:grid;gap:16px;min-width:0}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.narr{background:var(--sunk);border-radius:10px;padding:12px 14px;min-height:3.2em}
+.narr b{font-family:var(--f-mono);font-weight:600}
+.narr .real{display:block;margin-top:6px;font-size:.88rem;color:var(--muted)}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+@media (max-width:820px){.two{grid-template-columns:minmax(0,1fr)}.strip{grid-template-columns:minmax(0,1fr)}}
+
+/* mermaid */
+.mer{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;overflow-x:auto}
+.mer pre.mermaid{margin:0;font-family:var(--f-mono);font-size:.8rem;background:none;text-align:center;color:var(--ink)}
+.mer .cap{font-size:.8rem;color:var(--muted);margin-top:6px}
+
+/* interactive mindmap */
+.mm{display:grid;gap:12px}
+.mm-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.mm-tree{overflow-x:auto;padding:6px 2px 10px}
+.mm-node{display:flex;align-items:center}
+.mm-kids{display:flex;flex-direction:column;position:relative;padding-left:18px}
+.mm-kids::before{content:"";position:absolute;left:0;top:50%;width:18px;border-top:2px solid var(--line)}
+.mm-kids>.mm-node{position:relative;padding:4px 0 4px 20px}
+.mm-kids>.mm-node::before{content:"";position:absolute;left:0;top:50%;width:20px;border-top:2px solid color-mix(in srgb,var(--c) 55%,var(--line))}
+.mm-kids>.mm-node::after{content:"";position:absolute;left:0;top:0;bottom:0;border-left:2px solid color-mix(in srgb,var(--c) 55%,var(--line))}
+.mm-kids>.mm-node:first-child::after{top:50%}
+.mm-kids>.mm-node:last-child::after{bottom:50%}
+.mm-kids>.mm-node:only-child::after{display:none}
+.mm-node.closed>.mm-kids{display:none}
+.mm-label{flex:none;max-width:230px;text-align:left;border:2px solid var(--c);background:color-mix(in srgb,var(--c) 12%,var(--surface));color:var(--ink);border-radius:999px;padding:5px 12px;cursor:pointer;font-weight:700;font-size:.88rem;line-height:1.25;display:inline-flex;gap:6px;align-items:center}
+.mm-node.lv0>.mm-label{font-family:var(--f-display);font-size:1.1rem;padding:10px 16px;border-radius:14px;background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.mm-node.lv2>.mm-label,.mm-node.lv3>.mm-label{font-weight:400;border-width:1.5px;background:var(--surface);border-radius:8px;font-size:.84rem}
+.mm-label.sel{box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 35%,transparent)}
+.mm-count{font-family:var(--f-mono);font-size:.7rem;background:var(--c);color:var(--surface);border-radius:999px;padding:0 6px;display:none}
+.mm-node.closed>.mm-label .mm-count{display:inline}
+.mm-detail{border-left:4px solid var(--c,var(--c1));background:var(--sunk);border-radius:0 10px 10px 0;padding:12px 14px;min-height:4em}
+.mm-detail b{font-family:var(--f-display);font-size:1.05rem;display:block;margin-bottom:2px}
+.mm-detail .path{font-family:var(--f-mono);font-size:.72rem;color:var(--muted);display:block;margin-bottom:4px}
+
+/* journey lane */
+.lane{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;align-items:stretch}
+.stop{border:2px solid var(--line);border-radius:12px;padding:10px 8px;text-align:center;display:grid;gap:4px;align-content:start;transition:all .25s;background:var(--bg)}
+.stop b{font-family:var(--f-display);font-size:.95rem}
+.stop small{color:var(--muted);font-size:.74rem;line-height:1.3}
+.stop.on{border-color:var(--c4);background:var(--c4s);transform:translateY(-3px)}
+.stop.done{border-color:var(--c3)}
+.pkt{min-height:2.2em;text-align:center;font-family:var(--f-mono);font-size:.78rem;color:var(--c4);font-weight:600}
+@media (max-width:640px){.lane{grid-template-columns:minmax(0,1fr)}.stop.on{transform:none}}
+
+/* url decoder */
+.url{font-family:var(--f-mono);font-size:clamp(.85rem,2.6vw,1.15rem);display:flex;flex-wrap:wrap;gap:2px;overflow-x:auto}
+.url button{font-family:var(--f-mono);font-size:inherit;border:none;border-bottom:3px solid var(--c);background:color-mix(in srgb,var(--c) 10%,transparent);color:var(--ink);padding:4px 3px;cursor:pointer;border-radius:4px 4px 0 0}
+.url button.sel{background:color-mix(in srgb,var(--c) 28%,transparent)}
+.url .sep{padding:4px 0;color:var(--muted)}
+
+/* cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.card{border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:6px;background:var(--surface);align-content:start}
+.card b{font-family:var(--f-display);font-size:1.05rem}
+.card .what{font-size:.8rem;font-family:var(--f-mono);color:var(--muted)}
+.card p{font-size:.95rem;color:var(--muted)}
+
+/* game */
+.game{display:grid;gap:10px}
+.qrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.qrow code{font-size:.82rem;white-space:normal;word-break:break-word}
+.qrow .opts{display:flex;gap:6px;flex-wrap:wrap}
+.qrow .fb{grid-column:1/-1;font-size:.9rem}
+.qrow.right{border-color:var(--c3);background:var(--c3s)}
+.qrow.wrong{border-color:var(--c4);background:var(--c4s)}
+@media (max-width:640px){.qrow{grid-template-columns:minmax(0,1fr)}}
+.score{font-family:var(--f-mono);font-size:.85rem;color:var(--muted)}
+
+/* resultset */
+.rs{width:100%;border-collapse:collapse;font-family:var(--f-mono);font-size:.84rem}
+.rs th,.rs td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
+.rs th{color:var(--muted);font-weight:600}
+.rs td.cur{width:4.5em;color:var(--c4);font-weight:700}
+.rs tr.on td{background:var(--c4s)}
+.rs tr.read td{color:var(--muted)}
+.rs tr.before td{color:var(--c4);font-weight:700}
+.objs{display:flex;flex-wrap:wrap;gap:8px;min-height:44px}
+.obj{border:1.5px solid var(--c3);background:var(--c3s);border-radius:8px;padding:5px 9px;font-family:var(--f-mono);font-size:.76rem;animation:pop .3s ease}
+.obj.warn{border-color:var(--c4);background:var(--c4s)}
+@keyframes pop{from{transform:scale(.8);opacity:.3}to{transform:none;opacity:1}}
+.pc{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:10px 0;font-family:var(--f-mono);font-size:.8rem;line-height:1.55;overflow-x:auto}
+.pc div{padding:0 12px;white-space:pre;border-left:3px solid transparent}
+.pc div.on{background:var(--c4s);border-left-color:var(--c4)}
+.pc .c{color:var(--tk-com)}
+
+/* injection lab */
+.sql{font-family:var(--f-mono);font-size:.86rem;background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;white-space:pre-wrap;word-break:break-word;line-height:1.7}
+.sql .u{background:var(--c3s);border-radius:3px}
+.sql .x{background:var(--c4);color:var(--surface);border-radius:3px}
+.sql .q{color:var(--c1);font-weight:700}
+.verdict{font-weight:700}
+.ok{color:var(--c3)} .bad{color:var(--c4)}
+
+/* tabs + code */
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.tab{background:none;border:none;border-bottom:2px solid transparent;padding:8px 12px;cursor:pointer;color:var(--muted);font-weight:700}
+.tab[aria-selected="true"]{color:var(--ink);border-color:var(--c1)}
+pre.code{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;margin:0;font-family:var(--f-mono);font-size:.8rem;line-height:1.6;color:var(--ink)}
+pre.code code{font-size:inherit;background:none;padding:0}
+.token.keyword,.token.boolean{color:var(--tk-kw)}
+.token.string,.token.char,.token.attr-value{color:var(--tk-str)}
+.token.comment{color:var(--tk-com);font-style:italic}
+.token.number{color:var(--tk-num)}
+.token.function{color:var(--tk-fn)}
+.token.class-name,.token.tag{color:var(--tk-cls)}
+.token.operator,.token.punctuation{color:var(--muted)}
+.gets{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.92rem}
+.gets b{font-family:var(--f-mono);font-size:.85rem}
+
+/* nesting */
+.nest{display:grid;gap:0}
+.box{border:2px dashed var(--line);border-radius:12px;padding:10px 12px 12px;display:grid;gap:8px;transition:all .25s;color:var(--muted)}
+.box>.lab{font-family:var(--f-mono);font-size:.8rem;font-weight:600;display:flex;justify-content:space-between;gap:8px}
+.box.open{border-style:solid;color:var(--ink)}
+.box.b1.open{border-color:var(--c1);background:var(--c1s)}
+.box.b2.open{border-color:var(--c2);background:var(--c2s)}
+.box.b3.open{border-color:var(--c3);background:var(--c3s)}
+.box.closing{border-color:var(--c4)!important;background:var(--c4s)!important}
+
+/* troubleshooter */
+.errs{display:flex;flex-wrap:wrap;gap:8px}
+.errs button{font-family:var(--f-mono);font-size:.78rem;text-align:left}
+.fix ol{margin:6px 0 0;padding-left:1.3em;display:grid;gap:4px}
+
+details.setup{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:12px 16px}
+details.setup summary{cursor:pointer;font-weight:700}
+details.setup[open] summary{margin-bottom:10px}
+
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table.cmp{border-collapse:collapse;width:100%;min-width:640px;font-size:.92rem}
+table.cmp th,table.cmp td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+table.cmp th{font-family:var(--f-display);background:var(--sunk)}
+table.cmp tr:last-child td{border-bottom:none}
+
+.gotcha{border:2px solid var(--c4);border-radius:14px;padding:20px;background:var(--surface);display:grid;gap:14px}
+.vs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.vs>div{min-width:0}
+@media (max-width:720px){.vs{grid-template-columns:minmax(0,1fr)}}
+.vs .tag{font-family:var(--f-mono);font-size:.74rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.traps{display:grid;gap:10px;margin:0;padding-left:1.2em}
+
+details.q{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px}
+details.q summary{cursor:pointer;font-weight:700}
+details.q[open] summary{margin-bottom:8px}
+details.q p{color:var(--muted)}
+.next{display:flex;justify-content:flex-end;padding-top:30px}
+.next a{font-family:var(--f-display);font-size:1.2rem;font-weight:700;text-decoration:none;border:2px solid var(--ink);color:var(--ink);padding:12px 18px;border-radius:12px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+/* page-2 extras */
+.codecmp{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:14px}
+@media (max-width:860px){.codecmp{grid-template-columns:minmax(0,1fr)}}
+.lines{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:10px 0;font-family:var(--f-mono);font-size:.78rem;line-height:1.6;overflow-x:auto}
+.lines div{padding:0 12px;white-space:pre;border-left:3px solid transparent;transition:background .2s}
+.lines.hl div.b{background:var(--c4s);border-left-color:var(--c4);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--c4) 60%,transparent)}
+.lines.hl div.v{background:var(--c2s);border-left-color:var(--c2)}
+.lines.hl div.m{background:var(--c3s);border-left-color:var(--c3)}
+.lines .ttl{font-family:var(--f-body);font-weight:700;padding-bottom:6px;color:var(--muted);white-space:normal}
+.who{display:grid;gap:8px}
+.who .qrow{grid-template-columns:minmax(0,1fr) auto}
+.who .qrow span{font-weight:700}
+.pool{display:grid;gap:14px}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.slot{border:2px solid var(--c3);background:var(--c3s);border-radius:10px;padding:8px 10px;font-size:.82rem;display:grid;gap:4px;min-height:64px}
+.slot b{font-family:var(--f-mono);font-size:.78rem}
+.slot.busy{border-color:var(--c1);background:var(--c1s)}
+.slot.opening{border-color:var(--c2);background:var(--c2s)}
+.slot .bar{height:5px;background:var(--line);border-radius:3px;overflow:hidden}
+.slot .bar i{display:block;height:100%;background:var(--c1)}
+.slot.opening .bar i{background:var(--c2)}
+.queue{display:flex;flex-wrap:wrap;gap:6px;min-height:40px;align-items:center}
+.qchip{border:1.5px solid var(--c2);background:var(--c2s);border-radius:8px;padding:4px 8px;font-family:var(--f-mono);font-size:.74rem;display:grid;gap:3px;min-width:96px}
+.qchip .bar{height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.qchip .bar i{display:block;height:100%;background:var(--c4)}
+.log{font-family:var(--f-mono);font-size:.76rem;display:grid;gap:2px;max-height:150px;overflow:auto}
+.stats4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;text-align:center}
+@media (max-width:600px){.stats4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stats4 div{border:1px solid var(--line);border-radius:10px;padding:8px}
+.stats4 b{display:block;font-family:var(--f-display);font-size:1.4rem;font-variant-numeric:tabular-nums}
+.stats4 span{font-size:.74rem;color:var(--muted)}
+.grid33{display:grid;grid-template-columns:auto repeat(3,minmax(0,1fr));gap:6px;font-size:.86rem}
+.grid33 .h{font-weight:700;font-family:var(--f-display);padding:6px;text-align:center}
+.grid33 .rh{font-family:var(--f-mono);font-size:.8rem;font-weight:600;padding:6px;align-self:center}
+.grid33 button{border:1.5px solid var(--line);border-radius:8px;background:var(--bg);padding:8px 6px;cursor:pointer;font-family:var(--f-mono);font-size:.76rem;color:var(--ink);text-align:center;line-height:1.3}
+.grid33 button.good{border-color:var(--c3);background:var(--c3s)}
+.grid33 button.boom{border-color:var(--c4);background:var(--c4s)}
+.grid33 button.sel{box-shadow:0 0 0 3px color-mix(in srgb,var(--c1) 40%,transparent)}
+@media (max-width:560px){.grid33{grid-template-columns:minmax(0,1fr) repeat(3,minmax(0,1fr));font-size:.78rem}.grid33 button{font-size:.68rem}}
+.conv{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:12px;align-items:center}
+@media (max-width:700px){.conv{grid-template-columns:minmax(0,1fr)}}
+.mapper{border:2px solid var(--c6);background:var(--c6s);border-radius:14px;padding:12px 14px;text-align:center;font-family:var(--f-mono);font-size:.8rem;display:grid;gap:4px}
+.mapper b{font-family:var(--f-display);font-size:1rem}
+.mapper.on{box-shadow:0 0 0 4px color-mix(in srgb,var(--c6) 30%,transparent)}
+.alarm{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:760px){.alarm{grid-template-columns:minmax(0,1fr)}}
+.alarm>div{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:4px;align-content:start;min-width:0}
+.alarm .k{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.alarm code{white-space:normal;word-break:break-word}
+.alarm .spring{border-color:var(--c3);background:var(--c3s)}
+.alarm .raw{border-color:var(--c2);background:var(--c2s)}
+.timeline{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.timeline li{display:grid;grid-template-columns:86px minmax(0,1fr);gap:10px;align-items:center;padding:6px 10px;border-radius:8px;border:1px solid transparent;color:var(--muted);transition:all .2s}
+.timeline li.done{color:var(--ink)}
+.timeline li.on{border-color:var(--c4);background:var(--c4s);color:var(--ink)}
+.actor{font-family:var(--f-mono);font-size:.7rem;font-weight:600;text-align:center;border-radius:999px;padding:2px 6px;border:1.5px solid var(--c)}
+.conv-in{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-family:var(--f-mono)}
+/* hibernate-series extras */
+.log2{font-family:var(--f-mono);font-size:.78rem;background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:3px;max-height:260px;overflow:auto;min-height:60px}
+.log2 .s{color:var(--c5)} .log2 .e{color:var(--c4);font-weight:700} .log2 .i{color:var(--muted)} .log2 .g{color:var(--c3)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.ent{border:2px solid var(--c);background:color-mix(in srgb,var(--c) 12%,var(--surface));border-radius:10px;padding:8px 10px;font-family:var(--f-mono);font-size:.78rem;display:grid;gap:2px;min-width:120px}
+.ent b{font-family:var(--f-display);font-size:.9rem}
+.state{font-family:var(--f-mono);font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:2px 8px;border:1.5px solid var(--c);color:var(--c);display:inline-block}
+.dbt{border-collapse:collapse;font-family:var(--f-mono);font-size:.78rem;width:100%}
+.dbt caption{text-align:left;font-family:var(--f-display);font-weight:700;font-size:.9rem;padding-bottom:4px}
+.dbt th,.dbt td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+.dbt th{background:var(--sunk);color:var(--muted)}
+.dbt tr.new td{background:var(--c3s)} .dbt tr.chg td{background:var(--c2s)} .dbt tr.del td{background:var(--c4s);text-decoration:line-through}
+.dbt td.hl,.dbt th.hl{background:var(--c1s);outline:2px solid var(--c1)}
+.tw{overflow-x:auto}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.meter{height:14px;background:var(--sunk);border-radius:7px;overflow:hidden;border:1px solid var(--line)}
+.meter i{display:block;height:100%;background:var(--c2);transition:width .2s}
+.big{font-family:var(--f-display);font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums}
+.pill{font-family:var(--f-mono);font-size:.74rem;border-radius:999px;padding:2px 8px;background:var(--sunk)}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-family:var(--f-mono);font-size:.8rem}
+.flow span{border:1.5px solid var(--line);border-radius:8px;padding:5px 9px;background:var(--bg)}
+.flow span.on{border-color:var(--c4);background:var(--c4s)}
+.flow i{font-style:normal;color:var(--muted)}
+input[type=number]{font:inherit;font-size:.92rem;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 8px;width:6.5em;color:var(--ink)}
+label.ck{display:inline-flex;gap:6px;align-items:center;font-size:.92rem;cursor:pointer}
+.practice{display:flex;justify-content:center;padding-top:22px}
+.practice a{font-family:var(--f-display);font-weight:700;font-size:1.1rem;text-decoration:none;background:var(--ink);color:var(--bg);padding:12px 20px;border-radius:12px}
+section>*,.two>*,.grid2>*,.bench>*,.stack>*{min-width:0}
+:not(pre)>code{overflow-wrap:anywhere}
+</style>
+<div class="wrap">
+
+<header class="hero">
+  <div class="series"><a href="hibernate-intro.html">1 · Hibernate intro</a><a href="hibernate-internals.html">2 · Internals</a><span class="here">3 · Relationships</span><a href="jpa-fetching.html">4 · Cascade &amp; N+1</a><a href="spring-data-jpa.html">5 · Spring Data JPA</a><a href="hibernate-quest.html" style="border-color:var(--c3);color:var(--c3);font-weight:700">⚔ Practice in Hibernate Quest</a></div>
+  <span class="eyebrow">Coder Army notes · interactive version · part 3 of 5</span>
+  <h1>Java holds references. <em>Databases hold foreign keys.</em></h1>
+  <p class="lead prose"><code>student.getDepartment()</code> is an object reference. In MySQL the same fact is a number in <code>students.department_id</code>. Relationship mapping tells JPA how to turn one into the other, which side is in charge of that number, and how many can link to how many.</p>
+  <div class="strip">
+    <div><b>Cardinality</b><span>One-to-one, one-to-many, many-to-one, many-to-many.</span></div>
+    <div><b>Owning side</b><span>The side whose field decides the foreign-key value.</span></div>
+    <div><b>Keep both sides in sync</b><span>Bidirectional fields don't update each other. Helper methods do.</span></div>
+  </div>
+  <ul class="toc">
+    <li><a href="#big"><span class="lvl">MAP</span>Big picture</a></li>
+    <li><a href="#analogy"><span class="lvl">BASIC</span>ID cards</a></li>
+    <li><a href="#fk"><span class="lvl">BASIC</span>References → foreign keys</a></li>
+    <li><a href="#cardinality"><span class="lvl">BASIC</span>Cardinality</a></li>
+    <li><a href="#direction"><span class="lvl">BASIC</span>Uni vs bidirectional</a></li>
+    <li><a href="#owning"><span class="lvl">CORE</span>Owning vs inverse</a></li>
+    <li><a href="#m2o"><span class="lvl">CORE</span>@ManyToOne</a></li>
+    <li><a href="#o2m"><span class="lvl">CORE</span>@OneToMany + mappedBy</a></li>
+    <li><a href="#helpers"><span class="lvl">CORE</span>Helper methods</a></li>
+    <li><a href="#o2o"><span class="lvl">ADV</span>@OneToOne</a></li>
+    <li><a href="#m2m"><span class="lvl">ADV</span>@ManyToMany</a></li>
+    <li><a href="#lombok"><span class="lvl">ADV</span>Lombok trap</a></li>
+    <li><a href="#ref"><span class="lvl">REF</span>Quick reference</a></li>
+    <li><a href="#gotcha"><span class="lvl">!</span>The gotcha</a></li>
+    <li><a href="#quiz"><span class="lvl">TEST</span>Quiz</a></li>
+  </ul>
+</header>
+
+<section id="big">
+  <span class="eyebrow">Big picture</span>
+  <h2>The whole topic on one map</h2>
+  <div class="bench"><div class="mm" id="mm-big"></div></div>
+</section>
+
+<section id="analogy">
+  <span class="eyebrow">The analogy</span>
+  <h2>Every student carries a department ID card</h2>
+  <div class="prose stack">
+    <p>Each student wears a card printed with their department number. The department keeps a roster on the wall, but the roster is only a convenience copy: when the registrar wants to know who's in Engineering, they read the <i>cards</i>, not the wall. Write a name on the roster without giving that student a card, and officially nothing changed.</p>
+  </div>
+  <dl class="map">
+    <dt>The card's department number</dt><dd>The <b>foreign key</b> <code>students.department_id</code></dd>
+    <dt>The student (who carries the card)</dt><dd>The <b>owning side</b>: <code>@ManyToOne @JoinColumn</code></dd>
+    <dt>The roster on the wall</dt><dd>The <b>inverse side</b>: <code>@OneToMany(mappedBy = "department")</code></dd>
+    <dt>Updating both card and roster</dt><dd>A <b>helper method</b> like <code>addStudent()</code></dd>
+    <dt>A club sign-up sheet with pairs</dt><dd>A <b>join table</b> for many-to-many</dd>
+  </dl>
+</section>
+
+<section id="fk">
+  <span class="eyebrow">Basic · the problem</span>
+  <h2>A column can't hold an object</h2>
+  <p class="prose">Without an ORM you'd store <code>private Long departmentId;</code>. With JPA you keep a real <code>Department</code> reference and Hibernate writes its id into the foreign key. Click a student to follow the reference.</p>
+  <div class="bench">
+    <div class="two">
+      <div class="tw"><table class="dbt" id="fk-s"></table></div>
+      <div class="tw"><table class="dbt" id="fk-d"></table></div>
+    </div>
+    <div class="narr" id="fk-msg"></div>
+  </div>
+  <p class="prose">Real models are a <b>graph</b> of connected objects: Student → Department, Order → List&lt;OrderItem&gt;, Employee → manager Employee, User → Profile. These links are <b>relationships</b> (associations).</p>
+</section>
+
+<section id="cardinality">
+  <span class="eyebrow">Basic · how many to how many</span>
+  <h2>Pick the cardinality</h2>
+  <div class="tbl-wrap"><table class="cmp">
+    <tr><th>Annotation</th><th>Meaning</th><th>Example</th></tr>
+    <tr><td><code>@OneToOne</code></td><td>One with one</td><td>User and Profile</td></tr>
+    <tr><td><code>@OneToMany</code></td><td>One with many</td><td>Department → Students</td></tr>
+    <tr><td><code>@ManyToOne</code></td><td>Many with one</td><td>Students → Department</td></tr>
+    <tr><td><code>@ManyToMany</code></td><td>Many on both sides</td><td>Students and Courses</td></tr>
+  </table></div>
+  <p class="prose"><b>One-to-many and many-to-one are two views of the same relationship.</b> Department sees many students; each student sees one department. Both describe the one foreign key <code>students.department_id</code>.</p>
+  <div class="game" data-game>
+    <span class="score">0 / 5</span>
+    <div class="qrow" data-a="2" data-ex="Many orders belong to one customer → on Order it's @ManyToOne."><span>Field <code>Order.customer</code></span><div class="opts"><button class="btn sm">1:1</button><button class="btn sm">1:N</button><button class="btn sm">N:1</button><button class="btn sm">N:N</button></div><div class="fb"></div></div>
+    <div class="qrow" data-a="0" data-ex="Each user has at most one profile and vice versa."><span>Field <code>User.profile</code></span><div class="opts"><button class="btn sm">1:1</button><button class="btn sm">1:N</button><button class="btn sm">N:1</button><button class="btn sm">N:N</button></div><div class="fb"></div></div>
+    <div class="qrow" data-a="3" data-ex="A student takes many courses; a course has many students."><span>Field <code>Student.courses</code></span><div class="opts"><button class="btn sm">1:1</button><button class="btn sm">1:N</button><button class="btn sm">N:1</button><button class="btn sm">N:N</button></div><div class="fb"></div></div>
+    <div class="qrow" data-a="1" data-ex="One order has many items: @OneToMany on Order."><span>Field <code>Order.items</code></span><div class="opts"><button class="btn sm">1:1</button><button class="btn sm">1:N</button><button class="btn sm">N:1</button><button class="btn sm">N:N</button></div><div class="fb"></div></div>
+    <div class="qrow" data-a="2" data-ex="Many employees share one manager: self-referencing @ManyToOne."><span>Field <code>Employee.manager</code></span><div class="opts"><button class="btn sm">1:1</button><button class="btn sm">1:N</button><button class="btn sm">N:1</button><button class="btn sm">N:N</button></div><div class="fb"></div></div>
+  </div>
+</section>
+
+<section id="direction">
+  <span class="eyebrow">Basic · navigation</span>
+  <h2>Unidirectional or bidirectional?</h2>
+  <p class="prose">These words are about <b>Java navigation</b>, not SQL. Unidirectional: only <code>Student</code> has a <code>department</code> field, so <code>department.getStudents()</code> doesn't exist. Bidirectional: both have fields. It's still <b>one</b> foreign key. And the two fields <b>don't synchronize themselves</b>.</p>
+  <div class="two">
+    <pre class="code"><code class="language-java">// Unidirectional: Student → Department
+class Student    { Department department; }
+class Department { }</code></pre>
+    <pre class="code"><code class="language-java">// Bidirectional: Student ↔ Department
+class Student    { Department department; }
+class Department { List&lt;Student&gt; students; }</code></pre>
+  </div>
+</section>
+
+<section id="owning">
+  <span class="eyebrow">Core · who's in charge</span>
+  <h2>Owning side vs inverse side</h2>
+  <p class="prose">When both entities map the same relationship, JPA needs one authority. The <b>owning side</b> is the side JPA reads to decide the foreign-key value. It's <i>not</i> "the parent" or "the more important entity". The <b>inverse side</b> (<code>mappedBy</code>) is a read-only mirror for navigation.</p>
+  <p class="prose">Experiment: Rahul has no department. Choose which side(s) to update, then flush.</p>
+  <div class="bench">
+    <div class="toolbar">
+      <button class="btn sm" id="ow-own" type="button">rahul.setDepartment(engineering)</button>
+      <button class="btn sm" id="ow-inv" type="button">engineering.getStudents().add(rahul)</button>
+      <button class="btn sm" id="ow-help" type="button">engineering.addStudent(rahul)</button>
+      <button class="btn primary" id="ow-flush" type="button">flush</button>
+      <button class="btn sm" id="ow-reset" type="button">↺</button>
+    </div>
+    <div class="grid2">
+      <div class="stack"><b>Java memory</b><div class="chips" id="ow-mem"></div></div>
+      <div class="stack"><b>Database</b><div class="tw"><table class="dbt" id="ow-db"></table></div><div class="log2" id="ow-log"></div></div>
+    </div>
+    <div class="narr" id="ow-msg"></div>
+  </div>
+</section>
+
+<section id="m2o">
+  <span class="eyebrow">Core · many-to-one</span>
+  <h2>@ManyToOne + @JoinColumn</h2>
+  <pre class="code"><code class="language-java">@Entity
+public class Student {
+    @Id @GeneratedValue private Long id;
+    private String name;
+
+    @ManyToOne                                // many students → one department
+    @JoinColumn(name = "department_id")       // the foreign-key column (references departments.id)
+    private Department department;
+}</code></pre>
+  <p class="prose">If <code>engineering.getId() == 5</code>, then <code>student.setDepartment(engineering)</code> stores <code>department_id = 5</code>. Changing a managed student's department to HR makes dirty checking issue <code>UPDATE students SET department_id = 20 WHERE id = 1</code>: <b>relationship dirty checking</b>.</p>
+  <h3>Required or optional?</h3>
+  <div class="tbl-wrap"><table class="cmp"><tr><th>Setting</th><th>Layer</th><th>Meaning</th></tr>
+    <tr><td><code>optional = false</code></td><td>JPA object / persistence model</td><td>The association is required</td></tr>
+    <tr><td><code>nullable = false</code></td><td>Generated database schema</td><td>FK column is <code>NOT NULL</code></td></tr></table></div>
+  <h3>Insert simulator</h3>
+  <div class="bench">
+    <div class="toolbar"><button class="btn sm on" id="ins-ex" type="button">Department already exists (find)</button><button class="btn sm" id="ins-new" type="button">Both are new</button><label class="ck"><input type="checkbox" id="ins-pd"> persist(department) first</label><label class="ck"><input type="checkbox" id="ins-cas"> cascade = PERSIST</label><button class="btn primary" id="ins-go" type="button">persist(student) + commit</button></div>
+    <div class="log2" id="ins-log"></div>
+    <div class="narr" id="ins-msg"></div>
+  </div>
+  <p class="prose note">Setting an entity reference and managing the lifecycle of the referenced entity are separate concerns. Cascading is part 4.</p>
+</section>
+
+<section id="o2m">
+  <span class="eyebrow">Core · one-to-many</span>
+  <h2>@OneToMany(mappedBy = "department")</h2>
+  <p class="prose">The department's list is an object-side view of rows that already have <code>department_id</code>. No new column. <code>mappedBy</code> names the <b>Java field</b> in <code>Student</code>, not the column.</p>
+  <pre class="code"><code class="language-java">@Entity
+class Department {
+    @Id private Long id;
+    private String name;
+
+    @OneToMany(mappedBy = "department")          // "the field called department in Student owns this"
+    private List&lt;Student&gt; students = new ArrayList&lt;&gt;();
+}</code></pre>
+  <div class="bench">
+    <p>Which value goes in <code>mappedBy</code>?</p>
+    <div class="toolbar" id="mb-opts"></div>
+    <div class="narr" id="mb-msg">Pick one.</div>
+  </div>
+  <p class="prose">Hibernate does detect changes to a managed collection (<b>collection dirty checking</b>), but detecting a change isn't the same as owning the foreign key. Removing from <code>department.getStudents()</code> alone won't clear <code>department_id</code>; you also need <code>student.setDepartment(null)</code>.</p>
+</section>
+
+<section id="helpers">
+  <span class="eyebrow">Core · keep it consistent</span>
+  <h2>Put the two-sided update in one method</h2>
+  <pre class="code"><code class="language-java">public void addStudent(Student student) {
+    students.add(student);           // inverse side (Java navigation)
+    student.setDepartment(this);     // owning side (decides the FK)
+}
+public void removeStudent(Student student) {
+    students.remove(student);
+    student.setDepartment(null);
+}
+// usage
+engineering.addStudent(rahul);
+engineering.removeStudent(rahul);</code></pre>
+  <p class="prose">The helper keeps the in-memory graph consistent and guarantees the owning side is set. Try <code>addStudent</code> in the <a href="#owning">owning-side lab</a> above.</p>
+</section>
+
+<section id="o2o">
+  <span class="eyebrow">Advanced · one-to-one</span>
+  <h2>Foreign key + unique constraint</h2>
+  <p class="prose">A plain foreign key allows repeats, which is many-to-one. One-to-one needs the FK value to be <b>unique</b>. Try inserting extra profiles for user 1.</p>
+  <div class="bench">
+    <div class="toolbar"><label class="ck"><input type="checkbox" id="oo-u" checked> <code>@JoinColumn(name = "user_id", unique = true)</code></label><button class="btn sm" id="oo-add" type="button">insert profile for user 1</button><button class="btn sm" id="oo-reset" type="button">↺</button></div>
+    <div class="two"><div class="tw"><table class="dbt" id="oo-db"></table></div><div class="log2" id="oo-log"></div></div>
+  </div>
+  <div class="two">
+    <pre class="code"><code class="language-java">@Entity class Profile {                // OWNING side: has the join column
+    @Id @GeneratedValue private Long id;
+    private String bio;
+    @OneToOne(optional = false)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    private User user;
+}
+@Entity class User {                   // INVERSE side
+    @OneToOne(mappedBy = "user")        // Profile.user
+    private Profile profile;
+}</code></pre>
+    <div class="stack">
+      <h3>Shared primary key with @MapsId</h3>
+      <p>When a profile can't exist without its user, it can reuse the user's id: <code>profiles.id</code> is both the primary key and a foreign key to <code>users.id</code>.</p>
+      <pre class="code"><code class="language-java">@Entity class Profile {
+    @Id private Long id;
+    private String bio;
+    @OneToOne @MapsId
+    @JoinColumn(name = "id")
+    private User user;     // user 10 → profile 10
+}</code></pre>
+    </div>
+  </div>
+</section>
+
+<section id="m2m">
+  <span class="eyebrow">Advanced · many-to-many</span>
+  <h2>A join table of pairs</h2>
+  <p class="prose">Neither <code>students</code> nor <code>courses</code> can hold the link in one column, so a third table holds pairs: a <b>join / association / junction table</b> with two foreign keys. Click cells to enrol. The <code>(student_id, course_id)</code> unique constraint blocks duplicates.</p>
+  <div class="bench">
+    <div class="toolbar"><label class="ck"><input type="checkbox" id="mm-uc" checked> uniqueConstraints on the pair</label><button class="btn sm" id="mm-dup" type="button">try: insert (1, 101) again</button></div>
+    <div class="two"><div id="mm-grid" class="grid33"></div><div class="stack"><div class="tw"><table class="dbt" id="mm-jt"></table></div><div class="log2" id="mm-log"></div></div></div>
+  </div>
+  <pre class="code"><code class="language-java">@ManyToMany                                     // OWNING side: has @JoinTable
+@JoinTable(
+    name = "student_course",
+    joinColumns        = @JoinColumn(name = "student_id"),   // points to the owner (Student)
+    inverseJoinColumns = @JoinColumn(name = "course_id"),    // points to the other side
+    uniqueConstraints  = @UniqueConstraint(columnNames = {"student_id", "course_id"}))
+private Set&lt;Course&gt; courses = new HashSet&lt;&gt;();
+
+// in Course: INVERSE side
+@ManyToMany(mappedBy = "courses")
+private Set&lt;Student&gt; students = new HashSet&lt;&gt;();
+
+public void addCourse(Course course)    { courses.add(course);    course.getStudents().add(this); }
+public void removeCourse(Course course) { courses.remove(course); course.getStudents().remove(this); }</code></pre>
+</section>
+
+<section id="lombok">
+  <span class="eyebrow">Advanced · Lombok</span>
+  <h2>@Data on a bidirectional entity</h2>
+  <p class="prose"><code>@Data</code> generates getters, setters <i>and</i> <code>toString()</code>, <code>equals()</code>, <code>hashCode()</code>. With Student ↔ Department, <code>toString()</code> walks back and forth forever.</p>
+  <div class="bench">
+    <div class="toolbar"><button class="btn sm on" id="lb-data" type="button">@Data</button><button class="btn sm" id="lb-safe" type="button">@Getter @Setter @NoArgsConstructor</button><button class="btn primary" id="lb-go" type="button">System.out.println(rahul)</button></div>
+    <div class="log2" id="lb-log"></div>
+  </div>
+  <ul class="traps prose"><li>Recursive navigation → <code>StackOverflowError</code></li><li>Unexpected lazy loading</li><li>Comparing large collections</li><li>Unstable equality / hash codes for entities</li></ul>
+  <p class="prose note">If you do generate toString/equals/hashCode, exclude relationship fields and design entity identity deliberately.</p>
+</section>
+
+<section id="ref">
+  <span class="eyebrow">Reference</span>
+  <h2>Quick reference</h2>
+  <div class="tbl-wrap"><table class="cmp">
+    <tr><th>Annotation</th><th>Database shape</th><th>Typical owning side (bidirectional)</th></tr>
+    <tr><td><code>@ManyToOne</code></td><td>FK on the many side</td><td>This side, with <code>@JoinColumn</code></td></tr>
+    <tr><td><code>@OneToMany(mappedBy)</code></td><td>Inverse view of an existing FK</td><td>The other side</td></tr>
+    <tr><td><code>@OneToOne</code></td><td>FK + unique constraint</td><td>The side with <code>@JoinColumn</code></td></tr>
+    <tr><td><code>@ManyToMany</code></td><td>Join table with two FKs</td><td>The side with <code>@JoinTable</code></td></tr>
+  </table></div>
+  <ol class="prose stack">
+    <li>Java stores entity references; databases store foreign keys.</li>
+    <li>Uni/bidirectional describe Java navigation; bidirectional is still one relationship.</li>
+    <li>The owning side decides what JPA writes. <code>mappedBy</code> points at a Java field.</li>
+    <li>Keep both sides in sync; use helper methods.</li>
+    <li>Setting a reference doesn't persist the referenced entity. Cascading controls lifecycle, not ownership.</li>
+  </ol>
+</section>
+
+<section id="gotcha">
+  <span class="eyebrow">The gotcha</span>
+  <div class="gotcha">
+    <h2>Adding only to the mappedBy collection</h2>
+    <p class="prose">The list on the inverse side looks like the "parent's" list, so it feels authoritative. It isn't. JPA writes the foreign key from the owning side.</p>
+    <div class="vs">
+      <div><div class="tag bad">✗ department_id stays NULL</div><pre class="code"><code class="language-java">engineering.getStudents().add(rahul);
+// rahul.department is still null</code></pre></div>
+      <div><div class="tag ok">✓ Owning side set</div><pre class="code"><code class="language-java">engineering.addStudent(rahul);
+// students.add(rahul) + rahul.setDepartment(this)</code></pre></div>
+    </div>
+    <ul class="traps">
+      <li><b>mappedBy = "department_id"</b> is wrong: use the field name <code>"department"</code>.</li>
+      <li><b>A FK without unique</b> isn't one-to-one: the DB allows many profiles per user.</li>
+      <li><b>Setting only the owning side</b> saves correctly but leaves the in-memory list stale for the rest of the transaction.</li>
+      <li><b>@Data on entities</b> can recurse into StackOverflowError.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="quiz">
+  <span class="eyebrow">Recall</span>
+  <h2>Answer out loud before opening</h2>
+  <details class="q"><summary>1. How does a database represent student.department?</summary><p>A foreign-key column <code>students.department_id</code> referencing <code>departments.id</code>.</p></details>
+  <details class="q"><summary>2. Is a bidirectional Student ↔ Department two relationships?</summary><p>No. Two Java navigation paths, one foreign key.</p></details>
+  <details class="q"><summary>3. Which side owns a bidirectional one-to-many?</summary><p>The <code>@ManyToOne</code> side with <code>@JoinColumn</code> (Student). Department's list is the inverse side.</p></details>
+  <details class="q"><summary>4. Predict: only engineering.getStudents().add(rahul), then flush.</summary><p>No change to <code>department_id</code>; the inverse side doesn't control the FK.</p></details>
+  <details class="q"><summary>5. What makes one-to-one different from many-to-one in the schema?</summary><p>The foreign key gets a unique constraint.</p></details>
+  <details class="q"><summary>6. What do joinColumns and inverseJoinColumns mean?</summary><p>joinColumns: FK to the owning entity (student_id). inverseJoinColumns: FK to the other entity (course_id).</p></details>
+  <details class="q"><summary>7. What does @MapsId do?</summary><p>Uses the associated entity's id as this entity's id: shared primary key.</p></details>
+  <details class="q"><summary>8. Why avoid @Data on JPA entities?</summary><p>Generated toString/equals/hashCode can recurse through bidirectional relationships, trigger lazy loads and compare big collections.</p></details>
+  <div class="practice"><a href="hibernate-quest.html#l3-1">Practice this in Hibernate Quest →</a></div>
+  <div class="next"><a href="jpa-fetching.html">Next: cascading, lazy loading, N+1 →</a></div>
+</section>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const BR = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--c6)'];
+/* ---------- reusable: clickable mindmap ---------- */
+function mindmap(el, data, openDepth = 1){
+  el.innerHTML = `<div class="mm-tools"><button class="btn sm" type="button" data-a="open">Expand all</button><button class="btn sm" type="button" data-a="close">Fold to main branches</button></div><div class="mm-tree"></div><div class="mm-detail"></div>`;
+  const tree = el.querySelector('.mm-tree'), det = el.querySelector('.mm-detail');
+  let sel = null;
+  function show(node, path, color, btn){
+    if(sel) sel.classList.remove('sel'); sel = btn; btn.classList.add('sel');
+    det.style.setProperty('--c', color);
+    det.innerHTML = `<span class="path">${esc(path.join('  ›  '))}</span><b>${esc(node.t)}</b>${node.d || ''}`;
+  }
+  function build(node, level, color, path){
+    const w = document.createElement('div');
+    w.className = 'mm-node lv' + Math.min(level, 3);
+    w.style.setProperty('--c', color);
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'mm-label';
+    b.innerHTML = esc(node.t) + (node.c ? `<span class="mm-count">+${node.c.length}</span>` : '');
+    w.append(b);
+    const p = path.concat(node.t);
+    if(node.c){
+      const k = document.createElement('div'); k.className = 'mm-kids';
+      node.c.forEach((ch, i) => k.append(build(ch, level + 1, level === 0 ? BR[i % BR.length] : color, p)));
+      w.append(k);
+      if(level >= openDepth) w.classList.add('closed');
+    }
+    b.onclick = () => {
+      if(node.c && level > 0){
+        if(w.classList.contains('closed')) w.classList.remove('closed');
+        else if(sel === b) w.classList.add('closed');
+      }
+      show(node, p, color, b);
+    };
+    if(level === 0) setTimeout(() => show(node, p, 'var(--ink)', b));
+    return w;
+  }
+  tree.append(build(data, 0, 'var(--ink)', []));
+  el.querySelector('[data-a=open]').onclick = () => tree.querySelectorAll('.mm-node').forEach(n => n.classList.remove('closed'));
+  el.querySelector('[data-a=close]').onclick = () => tree.querySelectorAll('.mm-node.lv1').forEach(n => n.classList.add('closed'));
+}
+
+/* ---------- reusable: stepper ---------- */
+function stepper(root, frames, render, delay = 1600){
+  const bar = document.createElement('div'); bar.className = 'toolbar';
+  bar.innerHTML = `<button class="btn" type="button" data-a="back">◀ Back</button><button class="btn primary" type="button" data-a="next">Next ▶</button><button class="btn" type="button" data-a="play">▶ Play</button><button class="btn" type="button" data-a="reset">↺ Restart</button><span class="score" data-a="n"></span>`;
+  root.prepend(bar);
+  const st = { i:0, t:null, frames };
+  const draw = () => {
+    render(st.frames[st.i], st.i);
+    bar.querySelector('[data-a=n]').textContent = `step ${st.i + 1} / ${st.frames.length}`;
+    bar.querySelector('[data-a=next]').disabled = st.i >= st.frames.length - 1;
+    bar.querySelector('[data-a=back]').disabled = st.i === 0;
+    bar.querySelector('[data-a=play]').textContent = st.t ? '⏸ Pause' : '▶ Play';
+  };
+  const stop = () => { clearTimeout(st.t); st.t = null; };
+  const tick = () => { if(st.i < st.frames.length - 1){ st.i++; st.t = setTimeout(tick, delay); } else stop(); draw(); };
+  bar.onclick = e => {
+    const a = e.target.closest('button')?.dataset.a; if(!a) return;
+    if(a === 'next'){ stop(); st.i = Math.min(st.frames.length - 1, st.i + 1); }
+    if(a === 'back'){ stop(); st.i = Math.max(0, st.i - 1); }
+    if(a === 'reset'){ stop(); st.i = 0; }
+    if(a === 'play'){ if(st.t) stop(); else { if(st.i >= st.frames.length - 1) st.i = 0; st.t = setTimeout(tick, 250); } }
+    draw();
+  };
+  draw();
+  return { reload(f){ stop(); st.frames = f; st.i = Math.min(st.i, f.length - 1); draw(); }, draw };
+}
+
+/* ---------- big mindmap ---------- */
+/* ---------- tabs: <div class="tabs" data-tabs="id"> buttons data-t="key"; panes [data-pane-of="id"][data-pane="key"] ---------- */
+document.querySelectorAll('[data-tabs]').forEach(tb => {
+  const id = tb.dataset.tabs;
+  const sel = k => { tb.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.t === k));
+    document.querySelectorAll(`[data-pane-of="${id}"]`).forEach(p => p.hidden = p.dataset.pane !== k); };
+  tb.onclick = e => { const b = e.target.closest('.tab'); if(b) sel(b.dataset.t); };
+  sel(tb.querySelector('.tab').dataset.t);
+});
+/* ---------- tiny log helper ---------- */
+function logger(el){ return { clear(){ el.innerHTML=''; }, add(cls, html){ const d=document.createElement('div'); d.className=cls; d.innerHTML=html; el.append(d); el.scrollTop=el.scrollHeight; } }; }
+/* ---------- quick quiz rows: <div class="game" data-game> with .qrow[data-a="idx"] containing .opts buttons ---------- */
+document.querySelectorAll('[data-game]').forEach(g => {
+  const sc = g.querySelector('.score'); let got = 0, tot = g.querySelectorAll('.qrow').length;
+  g.querySelectorAll('.qrow').forEach(r => r.querySelectorAll('.opts button').forEach((b, i) => b.onclick = () => {
+    if(r.dataset.done) return; r.dataset.done = 1; const ok = i === +r.dataset.a; if(ok) got++;
+    r.classList.add(ok ? 'right' : 'wrong'); r.querySelector('.fb').innerHTML = (ok ? '✓ ' : '✗ ') + r.dataset.ex;
+    if(sc) sc.textContent = `${got} / ${tot} right`; }));
+});
+
+mindmap($('#mm-big'), {t:'JPA relationships', d:'Object references become foreign keys and join tables.', c:[
+  {t:'The problem', d:'A column can\'t hold an object.', c:[{t:'Foreign key', d:'students.department_id → departments.id'},{t:'Object graph', d:'Entities reference each other.'}]},
+  {t:'Cardinality', d:'How many on each side.', c:[{t:'@OneToOne', d:'FK + unique.'},{t:'@ManyToOne', d:'FK on the many side.'},{t:'@OneToMany', d:'Inverse view of that FK.'},{t:'@ManyToMany', d:'Join table.'}]},
+  {t:'Direction', d:'Java navigation only.', c:[{t:'Unidirectional', d:'One side has the field.'},{t:'Bidirectional', d:'Both have fields; still one relationship; they don\'t self-sync.'}]},
+  {t:'Ownership', d:'Who decides the FK value.', c:[{t:'Owning side', d:'@JoinColumn / @JoinTable.'},{t:'Inverse side', d:'mappedBy = "javaFieldName".'},{t:'Helper methods', d:'Update both sides together.'}]},
+  {t:'Details', d:'Options and traps.', c:[{t:'optional / nullable', d:'Required association vs NOT NULL column.'},{t:'@MapsId', d:'Shared primary key.'},{t:'Lombok @Data', d:'Recursion, lazy loads, unstable equality.'}]}
+]});
+
+/* fk follow */
+const FKS=[[1,'Rahul',10],[2,'Aman',10],[3,'Priya',20]], FKD=[[10,'Engineering'],[20,'HR']];
+function fk(sel){ $('#fk-s').innerHTML='<caption>students</caption><tr><th>id</th><th>name</th><th>department_id</th></tr>'+FKS.map(r=>`<tr data-i="${r[0]}" style="cursor:pointer" class="${r[0]===sel?'chg':''}"><td>${r[0]}</td><td>${r[1]}</td><td class="${r[0]===sel?'hl':''}">${r[2]}</td></tr>`).join('');
+  const d = sel? FKS.find(r=>r[0]===sel)[2] : null;
+  $('#fk-d').innerHTML='<caption>departments</caption><tr><th>id</th><th>name</th></tr>'+FKD.map(r=>`<tr><td class="${r[0]===d?'hl':''}">${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+  if(sel){ const s=FKS.find(r=>r[0]===sel); $('#fk-msg').innerHTML=`Java: <code>${s[1].toLowerCase()}.getDepartment().getName()</code> → "${FKD.find(r=>r[0]===d)[1]}". SQL: <code>students.department_id = ${d}</code> → <code>departments.id = ${d}</code>.`; } }
+$('#fk-s').onclick=e=>{ const r=e.target.closest('[data-i]'); if(r) fk(+r.dataset.i); }; fk(1);
+
+/* owning side */
+let ow; const owl=logger($('#ow-log'));
+function owReset(){ ow={own:false, inv:false, db:null}; owl.clear(); owDraw('Rahul has no department. Try only the inverse side first, then flush.'); }
+function owDraw(m){
+  $('#ow-mem').innerHTML = `<div class="ent" style="--c:var(--c3)"><b>rahul</b>department = ${ow.own?'engineering':'null'}<span class="what">owning side</span></div><div class="ent" style="--c:var(--c6)"><b>engineering</b>students = [${ow.inv?'rahul':''}]<span class="what">inverse side (mappedBy)</span></div>` + (ow.own!==ow.inv?'<span class="state" style="--c:var(--c4)">graph inconsistent</span>':'');
+  $('#ow-db').innerHTML = `<caption>students</caption><tr><th>id</th><th>name</th><th>department_id</th></tr><tr class="${ow.db?'chg':''}"><td>1</td><td>Rahul</td><td>${ow.db??'NULL'}</td></tr>`;
+  $('#ow-msg').innerHTML = m; }
+$('#ow-own').onclick=()=>{ ow.own=true; owDraw('Owning side set. The list on engineering still doesn\'t show Rahul in memory.'); };
+$('#ow-inv').onclick=()=>{ ow.inv=true; owDraw('Added to the inverse list. Rahul\'s own field is still null.'); };
+$('#ow-help').onclick=()=>{ ow.own=ow.inv=true; owDraw('Helper did both: list and owning field. Consistent.'); };
+$('#ow-flush').onclick=()=>{ const want=ow.own?10:null;
+  if(want!==ow.db){ owl.add('s',`update students set department_id=${want??'null'} where id=1`); ow.db=want; }
+  else owl.add('i','flush: no change to the owning side → no UPDATE');
+  owDraw(ow.own ? (ow.inv?'<span class="ok">Correct.</span> FK written from the owning side, and memory matches.':'FK written (owning side decides), but engineering.getStudents() in memory is stale.') : (ow.inv?'<span class="bad">Nothing saved.</span> Only the inverse side changed; JPA ignores it for the FK.':'Nothing changed.')); };
+$('#ow-reset').onclick=owReset; owReset();
+
+/* insert behaviour */
+let insNew=false; const insl=logger($('#ins-log'));
+function insMode(n){ insNew=n; $('#ins-ex').classList.toggle('on',!n); $('#ins-new').classList.toggle('on',n); $('#ins-pd').disabled=!n; $('#ins-cas').disabled=!n; insl.clear(); $('#ins-msg').innerHTML=''; }
+$('#ins-ex').onclick=()=>insMode(false); $('#ins-new').onclick=()=>insMode(true);
+$('#ins-go').onclick=()=>{ insl.clear();
+  if(!insNew){ insl.add('s','select … from departments where id=1'); insl.add('i','student.setDepartment(department); persist(student)'); insl.add('s',"insert into students (name, department_id) values ('Rahul', 1)"); insl.add('g','COMMIT'); $('#ins-msg').innerHTML='The existing department is <b>not inserted again</b>. Only its id goes into the FK.'; return; }
+  const pd=$('#ins-pd').checked, cas=$('#ins-cas').checked;
+  if(pd){ insl.add('s',"insert into departments (name) values ('Engineering')"); }
+  else if(cas){ insl.add('i','cascade PERSIST: persist(student) also persists the new department'); insl.add('s',"insert into departments (name) values ('Engineering')"); }
+  insl.add('i','persist(student)');
+  if(pd||cas){ insl.add('s',"insert into students (name, department_id) values ('Rahul', ?)"); insl.add('g','COMMIT'); $('#ins-msg').innerHTML = pd ? 'Persisted explicitly in the right order: department first.' : 'Cascade propagated persist to the department.'; }
+  else { insl.add('e','TransientPropertyValueException: object references an unsaved transient instance (Department)'); insl.add('e','ROLLBACK'); $('#ins-msg').innerHTML='<span class="bad">The department is transient.</span> There\'s no id to put in the FK. Persist it first, or add <code>cascade = CascadeType.PERSIST</code>. (Exact exception name: a Hibernate detail.)'; } };
+insMode(false);
+
+/* mappedBy picker */
+const MB=[['"department"',1,'Right. The name of the Java field <code>Student.department</code> that owns the relationship.'],['"department_id"',0,'That\'s the column name. mappedBy never refers to columns.'],['"students"',0,'That\'s this collection\'s own name.'],['"Department"',0,'That\'s the class name.']];
+$('#mb-opts').innerHTML=MB.map((m,i)=>`<button class="btn sm" data-i="${i}"><code>mappedBy = ${m[0]}</code></button>`).join('');
+$('#mb-opts').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; const m=MB[+b.dataset.i]; $('#mb-opts').querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); $('#mb-msg').innerHTML=(m[1]?'<span class="ok">✓</span> ':'<span class="bad">✗</span> ')+m[2]; };
+
+/* one to one */
+let oo; const ool=logger($('#oo-log'));
+function ooReset(){ oo=[[10,'Software dev',1]]; ool.clear(); ooDraw(); }
+function ooDraw(){ $('#oo-db').innerHTML='<caption>profiles</caption><tr><th>id</th><th>bio</th><th>user_id</th></tr>'+oo.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join(''); }
+$('#oo-add').onclick=()=>{ const id=10+oo.length; if($('#oo-u').checked){ ool.add('s',`insert into profiles (id, bio, user_id) values (${id}, 'Another', 1)`); ool.add('e','Duplicate entry \'1\' for key \'user_id\' → constraint violation'); }
+  else { oo.push([id,'Another',1]); ool.add('s',`insert into profiles … user_id=1 → OK`); if(oo.length>2) ool.add('e','User 1 now has '+oo.length+' profiles. That\'s many-to-one, not one-to-one.'); } ooDraw(); };
+$('#oo-u').onchange=ooReset; $('#oo-reset').onclick=ooReset; ooReset();
+
+/* many to many */
+const MS=[[1,'Rahul'],[2,'Priya']], MC=[[101,'Java'],[102,'Spring'],[103,'SQL']];
+let mm=[[1,101],[1,102],[2,101],[2,103]]; const mml=logger($('#mm-log'));
+function mmDraw(){ const has=(s,c)=>mm.some(p=>p[0]===s&&p[1]===c);
+  $('#mm-grid').innerHTML = '<div></div>'+MC.map(c=>`<div class="h">${c[1]}<br><span class="note">${c[0]}</span></div>`).join('') + MS.map(s=>`<div class="rh">${s[1]} (${s[0]})</div>`+MC.map(c=>`<button class="${has(s[0],c[0])?'good':''}" data-s="${s[0]}" data-c="${c[0]}">${has(s[0],c[0])?'enrolled':'—'}</button>`).join('')).join('');
+  $('#mm-jt').innerHTML='<caption>student_course</caption><tr><th>student_id</th><th>course_id</th></tr>'+mm.map(p=>`<tr><td>${p[0]}</td><td>${p[1]}</td></tr>`).join(''); }
+$('#mm-grid').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; const s=+b.dataset.s, c=+b.dataset.c; const n=MS.find(x=>x[0]===s)[1].toLowerCase(), cn=MC.find(x=>x[0]===c)[1].toLowerCase();
+  const i=mm.findIndex(p=>p[0]===s&&p[1]===c);
+  if(i>=0){ mm.splice(i,1); mml.add('i',`${n}.removeCourse(${cn})`); mml.add('s',`delete from student_course where student_id=${s} and course_id=${c}`); }
+  else { mm.push([s,c]); mml.add('i',`${n}.addCourse(${cn})`); mml.add('s',`insert into student_course (student_id, course_id) values (${s}, ${c})`); } mmDraw(); };
+$('#mm-dup').onclick=()=>{ mml.add('s','insert into student_course (student_id, course_id) values (1, 101)');
+  if($('#mm-uc').checked) mml.add('e','Duplicate entry \'1-101\' → rejected by the unique constraint');
+  else { mm.push([1,101]); mml.add('e','Accepted: Rahul is now enrolled in Java twice.'); } mmDraw(); };
+mmDraw();
+
+/* lombok */
+function lbMode(d){ $('#lb-data').classList.toggle('on',d); $('#lb-safe').classList.toggle('on',!d); $('#lb-log').innerHTML=''; lbD=d; }
+let lbD=true;
+$('#lb-data').onclick=()=>lbMode(true); $('#lb-safe').onclick=()=>lbMode(false);
+$('#lb-go').onclick=()=>{ const l=logger($('#lb-log')); l.clear();
+  if(!lbD){ l.add('g','Student@1b6d3586   (default Object.toString, no relationship walking)'); return; }
+  let s='', depth=0; const t=setInterval(()=>{ depth++; s = depth%2 ? 'Student(name=Rahul, department=' : 'Department(name=Engineering, students=[';
+    l.add('i','  '.repeat(Math.min(depth,14))+s); if(depth>=14){ clearInterval(t); l.add('e','Exception in thread "main" java.lang.StackOverflowError'); } }, 90); };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>

@@ -1,0 +1,827 @@
+<title>Spring Data JPA Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>/* Layout: one reading column (~70ch) that widens into full-width "lab benches" for each interactive part. */
+:root{
+  --bg:#F1F3F6; --surface:#FFFFFF; --sunk:#E7EBF0; --ink:#131B25; --muted:#576373; --line:#D3D9E1;
+  --c1:#4A54CF; --c2:#B8720C; --c3:#1F8A55; --c4:#CF3463; --c5:#0E7C8C; --c6:#8A3FB8;
+  --c1s:#E2E4FA; --c2s:#F6E7CF; --c3s:#D5EFE1; --c4s:#F9DAE3; --c5s:#D3EEF1; --c6s:#EEDFF8;
+  --code-bg:#F7F8FA; --tk-kw:#7A2FB8; --tk-str:#1F7A4A; --tk-com:#7A8594; --tk-num:#B35A00; --tk-fn:#2550C0; --tk-cls:#A0306A;
+  --f-display:'Familjen Grotesk','Segoe UI',system-ui,sans-serif;
+  --f-body:'Atkinson Hyperlegible','Segoe UI',system-ui,sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0C1117; --surface:#141B24; --sunk:#1B2430; --ink:#E4E9EF; --muted:#93A0AF; --line:#2A3441;
+  --c1:#8D95FF; --c2:#ECA944; --c3:#52C889; --c4:#FF6B93; --c5:#4FD0E0; --c6:#C99BFF;
+  --c1s:#232853; --c2s:#3B2C12; --c3s:#153626; --c4s:#431828; --c5s:#0F3439; --c6s:#33204A;
+  --code-bg:#10161E; --tk-kw:#C79BFF; --tk-str:#7FD6A2; --tk-com:#6F7C8C; --tk-num:#F2B266; --tk-fn:#86A9FF; --tk-cls:#F59BC6;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0C1117; --surface:#141B24; --sunk:#1B2430; --ink:#E4E9EF; --muted:#93A0AF; --line:#2A3441;
+  --c1:#8D95FF; --c2:#ECA944; --c3:#52C889; --c4:#FF6B93; --c5:#4FD0E0; --c6:#C99BFF;
+  --c1s:#232853; --c2s:#3B2C12; --c3s:#153626; --c4s:#431828; --c5s:#0F3439; --c6s:#33204A;
+  --code-bg:#10161E; --tk-kw:#C79BFF; --tk-str:#7FD6A2; --tk-com:#6F7C8C; --tk-num:#F2B266; --tk-fn:#86A9FF; --tk-cls:#F59BC6;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+.wrap{max-width:1120px;margin:0 auto}
+.prose{max-width:70ch}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.15;margin:0}
+h1{font-size:clamp(2.2rem,5.5vw,3.6rem);font-weight:700;letter-spacing:-.02em}
+h2{font-size:clamp(1.5rem,3.2vw,2rem);font-weight:700;letter-spacing:-.01em}
+h3{font-size:1.15rem;font-weight:600}
+p{margin:0}
+code,kbd{font-family:var(--f-mono);font-size:.86em}
+:not(pre)>code{background:var(--sunk);padding:.1em .35em;border-radius:4px}
+a{color:var(--c1)}
+section{padding-block:52px 8px;display:grid;gap:18px}
+.eyebrow{font-family:var(--f-mono);font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.lead{font-size:1.12rem;color:var(--muted)}
+.stack{display:grid;gap:14px}
+.note{font-size:.92rem;color:var(--muted)}
+
+header.hero{padding-block:52px 8px;display:grid;gap:22px}
+.hero h1 em{font-style:normal;color:var(--c1)}
+.strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:860px}
+.strip div{border-top:3px solid var(--line);padding-top:10px}
+.strip div:nth-child(1){border-color:var(--c1)} .strip div:nth-child(2){border-color:var(--c2)} .strip div:nth-child(3){border-color:var(--c3)}
+.strip b{font-family:var(--f-display);font-size:1.05rem;display:block}
+.strip span{color:var(--muted);font-size:.95rem}
+.toc{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:.95rem;padding:0;margin:0;list-style:none}
+.toc a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--line)}
+.toc a:hover{color:var(--ink);border-color:var(--ink)}
+.toc .lvl{font-family:var(--f-mono);font-size:.7rem;color:var(--muted);margin-right:4px}
+.series{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:.9rem;color:var(--muted)}
+.series .here{background:var(--ink);color:var(--bg);padding:4px 10px;border-radius:999px;font-weight:700}
+.series a{padding:4px 10px;border:1px solid var(--line);border-radius:999px;text-decoration:none;color:var(--ink)}
+
+.map{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:0;padding:16px 18px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.map dt{font-weight:700}
+.map dd{margin:0;color:var(--muted)}
+.map dd code{color:var(--ink)}
+@media (max-width:560px){.map{grid-template-columns:minmax(0,1fr)}.map dd{margin-bottom:6px}}
+
+button,select,input[type=text]{font:inherit;font-size:.92rem;color:var(--ink)}
+.btn{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;line-height:1.2}
+.btn:hover{border-color:var(--muted)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink);min-width:86px;justify-content:center}
+.btn.sm{padding:4px 9px;font-size:.82rem}
+.btn.on{border-color:var(--c1);background:var(--c1s)}
+.btn:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible,.mm-label:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+select,input[type=text]{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+
+.bench{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:grid;gap:16px;min-width:0}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.narr{background:var(--sunk);border-radius:10px;padding:12px 14px;min-height:3.2em}
+.narr b{font-family:var(--f-mono);font-weight:600}
+.narr .real{display:block;margin-top:6px;font-size:.88rem;color:var(--muted)}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+@media (max-width:820px){.two{grid-template-columns:minmax(0,1fr)}.strip{grid-template-columns:minmax(0,1fr)}}
+
+/* mermaid */
+.mer{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;overflow-x:auto}
+.mer pre.mermaid{margin:0;font-family:var(--f-mono);font-size:.8rem;background:none;text-align:center;color:var(--ink)}
+.mer .cap{font-size:.8rem;color:var(--muted);margin-top:6px}
+
+/* interactive mindmap */
+.mm{display:grid;gap:12px}
+.mm-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.mm-tree{overflow-x:auto;padding:6px 2px 10px}
+.mm-node{display:flex;align-items:center}
+.mm-kids{display:flex;flex-direction:column;position:relative;padding-left:18px}
+.mm-kids::before{content:"";position:absolute;left:0;top:50%;width:18px;border-top:2px solid var(--line)}
+.mm-kids>.mm-node{position:relative;padding:4px 0 4px 20px}
+.mm-kids>.mm-node::before{content:"";position:absolute;left:0;top:50%;width:20px;border-top:2px solid color-mix(in srgb,var(--c) 55%,var(--line))}
+.mm-kids>.mm-node::after{content:"";position:absolute;left:0;top:0;bottom:0;border-left:2px solid color-mix(in srgb,var(--c) 55%,var(--line))}
+.mm-kids>.mm-node:first-child::after{top:50%}
+.mm-kids>.mm-node:last-child::after{bottom:50%}
+.mm-kids>.mm-node:only-child::after{display:none}
+.mm-node.closed>.mm-kids{display:none}
+.mm-label{flex:none;max-width:230px;text-align:left;border:2px solid var(--c);background:color-mix(in srgb,var(--c) 12%,var(--surface));color:var(--ink);border-radius:999px;padding:5px 12px;cursor:pointer;font-weight:700;font-size:.88rem;line-height:1.25;display:inline-flex;gap:6px;align-items:center}
+.mm-node.lv0>.mm-label{font-family:var(--f-display);font-size:1.1rem;padding:10px 16px;border-radius:14px;background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.mm-node.lv2>.mm-label,.mm-node.lv3>.mm-label{font-weight:400;border-width:1.5px;background:var(--surface);border-radius:8px;font-size:.84rem}
+.mm-label.sel{box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 35%,transparent)}
+.mm-count{font-family:var(--f-mono);font-size:.7rem;background:var(--c);color:var(--surface);border-radius:999px;padding:0 6px;display:none}
+.mm-node.closed>.mm-label .mm-count{display:inline}
+.mm-detail{border-left:4px solid var(--c,var(--c1));background:var(--sunk);border-radius:0 10px 10px 0;padding:12px 14px;min-height:4em}
+.mm-detail b{font-family:var(--f-display);font-size:1.05rem;display:block;margin-bottom:2px}
+.mm-detail .path{font-family:var(--f-mono);font-size:.72rem;color:var(--muted);display:block;margin-bottom:4px}
+
+/* journey lane */
+.lane{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;align-items:stretch}
+.stop{border:2px solid var(--line);border-radius:12px;padding:10px 8px;text-align:center;display:grid;gap:4px;align-content:start;transition:all .25s;background:var(--bg)}
+.stop b{font-family:var(--f-display);font-size:.95rem}
+.stop small{color:var(--muted);font-size:.74rem;line-height:1.3}
+.stop.on{border-color:var(--c4);background:var(--c4s);transform:translateY(-3px)}
+.stop.done{border-color:var(--c3)}
+.pkt{min-height:2.2em;text-align:center;font-family:var(--f-mono);font-size:.78rem;color:var(--c4);font-weight:600}
+@media (max-width:640px){.lane{grid-template-columns:minmax(0,1fr)}.stop.on{transform:none}}
+
+/* url decoder */
+.url{font-family:var(--f-mono);font-size:clamp(.85rem,2.6vw,1.15rem);display:flex;flex-wrap:wrap;gap:2px;overflow-x:auto}
+.url button{font-family:var(--f-mono);font-size:inherit;border:none;border-bottom:3px solid var(--c);background:color-mix(in srgb,var(--c) 10%,transparent);color:var(--ink);padding:4px 3px;cursor:pointer;border-radius:4px 4px 0 0}
+.url button.sel{background:color-mix(in srgb,var(--c) 28%,transparent)}
+.url .sep{padding:4px 0;color:var(--muted)}
+
+/* cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.card{border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:6px;background:var(--surface);align-content:start}
+.card b{font-family:var(--f-display);font-size:1.05rem}
+.card .what{font-size:.8rem;font-family:var(--f-mono);color:var(--muted)}
+.card p{font-size:.95rem;color:var(--muted)}
+
+/* game */
+.game{display:grid;gap:10px}
+.qrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.qrow code{font-size:.82rem;white-space:normal;word-break:break-word}
+.qrow .opts{display:flex;gap:6px;flex-wrap:wrap}
+.qrow .fb{grid-column:1/-1;font-size:.9rem}
+.qrow.right{border-color:var(--c3);background:var(--c3s)}
+.qrow.wrong{border-color:var(--c4);background:var(--c4s)}
+@media (max-width:640px){.qrow{grid-template-columns:minmax(0,1fr)}}
+.score{font-family:var(--f-mono);font-size:.85rem;color:var(--muted)}
+
+/* resultset */
+.rs{width:100%;border-collapse:collapse;font-family:var(--f-mono);font-size:.84rem}
+.rs th,.rs td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
+.rs th{color:var(--muted);font-weight:600}
+.rs td.cur{width:4.5em;color:var(--c4);font-weight:700}
+.rs tr.on td{background:var(--c4s)}
+.rs tr.read td{color:var(--muted)}
+.rs tr.before td{color:var(--c4);font-weight:700}
+.objs{display:flex;flex-wrap:wrap;gap:8px;min-height:44px}
+.obj{border:1.5px solid var(--c3);background:var(--c3s);border-radius:8px;padding:5px 9px;font-family:var(--f-mono);font-size:.76rem;animation:pop .3s ease}
+.obj.warn{border-color:var(--c4);background:var(--c4s)}
+@keyframes pop{from{transform:scale(.8);opacity:.3}to{transform:none;opacity:1}}
+.pc{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:10px 0;font-family:var(--f-mono);font-size:.8rem;line-height:1.55;overflow-x:auto}
+.pc div{padding:0 12px;white-space:pre;border-left:3px solid transparent}
+.pc div.on{background:var(--c4s);border-left-color:var(--c4)}
+.pc .c{color:var(--tk-com)}
+
+/* injection lab */
+.sql{font-family:var(--f-mono);font-size:.86rem;background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;white-space:pre-wrap;word-break:break-word;line-height:1.7}
+.sql .u{background:var(--c3s);border-radius:3px}
+.sql .x{background:var(--c4);color:var(--surface);border-radius:3px}
+.sql .q{color:var(--c1);font-weight:700}
+.verdict{font-weight:700}
+.ok{color:var(--c3)} .bad{color:var(--c4)}
+
+/* tabs + code */
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.tab{background:none;border:none;border-bottom:2px solid transparent;padding:8px 12px;cursor:pointer;color:var(--muted);font-weight:700}
+.tab[aria-selected="true"]{color:var(--ink);border-color:var(--c1)}
+pre.code{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;margin:0;font-family:var(--f-mono);font-size:.8rem;line-height:1.6;color:var(--ink)}
+pre.code code{font-size:inherit;background:none;padding:0}
+.token.keyword,.token.boolean{color:var(--tk-kw)}
+.token.string,.token.char,.token.attr-value{color:var(--tk-str)}
+.token.comment{color:var(--tk-com);font-style:italic}
+.token.number{color:var(--tk-num)}
+.token.function{color:var(--tk-fn)}
+.token.class-name,.token.tag{color:var(--tk-cls)}
+.token.operator,.token.punctuation{color:var(--muted)}
+.gets{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.92rem}
+.gets b{font-family:var(--f-mono);font-size:.85rem}
+
+/* nesting */
+.nest{display:grid;gap:0}
+.box{border:2px dashed var(--line);border-radius:12px;padding:10px 12px 12px;display:grid;gap:8px;transition:all .25s;color:var(--muted)}
+.box>.lab{font-family:var(--f-mono);font-size:.8rem;font-weight:600;display:flex;justify-content:space-between;gap:8px}
+.box.open{border-style:solid;color:var(--ink)}
+.box.b1.open{border-color:var(--c1);background:var(--c1s)}
+.box.b2.open{border-color:var(--c2);background:var(--c2s)}
+.box.b3.open{border-color:var(--c3);background:var(--c3s)}
+.box.closing{border-color:var(--c4)!important;background:var(--c4s)!important}
+
+/* troubleshooter */
+.errs{display:flex;flex-wrap:wrap;gap:8px}
+.errs button{font-family:var(--f-mono);font-size:.78rem;text-align:left}
+.fix ol{margin:6px 0 0;padding-left:1.3em;display:grid;gap:4px}
+
+details.setup{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:12px 16px}
+details.setup summary{cursor:pointer;font-weight:700}
+details.setup[open] summary{margin-bottom:10px}
+
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table.cmp{border-collapse:collapse;width:100%;min-width:640px;font-size:.92rem}
+table.cmp th,table.cmp td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+table.cmp th{font-family:var(--f-display);background:var(--sunk)}
+table.cmp tr:last-child td{border-bottom:none}
+
+.gotcha{border:2px solid var(--c4);border-radius:14px;padding:20px;background:var(--surface);display:grid;gap:14px}
+.vs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.vs>div{min-width:0}
+@media (max-width:720px){.vs{grid-template-columns:minmax(0,1fr)}}
+.vs .tag{font-family:var(--f-mono);font-size:.74rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.traps{display:grid;gap:10px;margin:0;padding-left:1.2em}
+
+details.q{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px}
+details.q summary{cursor:pointer;font-weight:700}
+details.q[open] summary{margin-bottom:8px}
+details.q p{color:var(--muted)}
+.next{display:flex;justify-content:flex-end;padding-top:30px}
+.next a{font-family:var(--f-display);font-size:1.2rem;font-weight:700;text-decoration:none;border:2px solid var(--ink);color:var(--ink);padding:12px 18px;border-radius:12px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+/* page-2 extras */
+.codecmp{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:14px}
+@media (max-width:860px){.codecmp{grid-template-columns:minmax(0,1fr)}}
+.lines{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:10px 0;font-family:var(--f-mono);font-size:.78rem;line-height:1.6;overflow-x:auto}
+.lines div{padding:0 12px;white-space:pre;border-left:3px solid transparent;transition:background .2s}
+.lines.hl div.b{background:var(--c4s);border-left-color:var(--c4);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--c4) 60%,transparent)}
+.lines.hl div.v{background:var(--c2s);border-left-color:var(--c2)}
+.lines.hl div.m{background:var(--c3s);border-left-color:var(--c3)}
+.lines .ttl{font-family:var(--f-body);font-weight:700;padding-bottom:6px;color:var(--muted);white-space:normal}
+.who{display:grid;gap:8px}
+.who .qrow{grid-template-columns:minmax(0,1fr) auto}
+.who .qrow span{font-weight:700}
+.pool{display:grid;gap:14px}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.slot{border:2px solid var(--c3);background:var(--c3s);border-radius:10px;padding:8px 10px;font-size:.82rem;display:grid;gap:4px;min-height:64px}
+.slot b{font-family:var(--f-mono);font-size:.78rem}
+.slot.busy{border-color:var(--c1);background:var(--c1s)}
+.slot.opening{border-color:var(--c2);background:var(--c2s)}
+.slot .bar{height:5px;background:var(--line);border-radius:3px;overflow:hidden}
+.slot .bar i{display:block;height:100%;background:var(--c1)}
+.slot.opening .bar i{background:var(--c2)}
+.queue{display:flex;flex-wrap:wrap;gap:6px;min-height:40px;align-items:center}
+.qchip{border:1.5px solid var(--c2);background:var(--c2s);border-radius:8px;padding:4px 8px;font-family:var(--f-mono);font-size:.74rem;display:grid;gap:3px;min-width:96px}
+.qchip .bar{height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.qchip .bar i{display:block;height:100%;background:var(--c4)}
+.log{font-family:var(--f-mono);font-size:.76rem;display:grid;gap:2px;max-height:150px;overflow:auto}
+.stats4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;text-align:center}
+@media (max-width:600px){.stats4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stats4 div{border:1px solid var(--line);border-radius:10px;padding:8px}
+.stats4 b{display:block;font-family:var(--f-display);font-size:1.4rem;font-variant-numeric:tabular-nums}
+.stats4 span{font-size:.74rem;color:var(--muted)}
+.grid33{display:grid;grid-template-columns:auto repeat(3,minmax(0,1fr));gap:6px;font-size:.86rem}
+.grid33 .h{font-weight:700;font-family:var(--f-display);padding:6px;text-align:center}
+.grid33 .rh{font-family:var(--f-mono);font-size:.8rem;font-weight:600;padding:6px;align-self:center}
+.grid33 button{border:1.5px solid var(--line);border-radius:8px;background:var(--bg);padding:8px 6px;cursor:pointer;font-family:var(--f-mono);font-size:.76rem;color:var(--ink);text-align:center;line-height:1.3}
+.grid33 button.good{border-color:var(--c3);background:var(--c3s)}
+.grid33 button.boom{border-color:var(--c4);background:var(--c4s)}
+.grid33 button.sel{box-shadow:0 0 0 3px color-mix(in srgb,var(--c1) 40%,transparent)}
+@media (max-width:560px){.grid33{grid-template-columns:minmax(0,1fr) repeat(3,minmax(0,1fr));font-size:.78rem}.grid33 button{font-size:.68rem}}
+.conv{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:12px;align-items:center}
+@media (max-width:700px){.conv{grid-template-columns:minmax(0,1fr)}}
+.mapper{border:2px solid var(--c6);background:var(--c6s);border-radius:14px;padding:12px 14px;text-align:center;font-family:var(--f-mono);font-size:.8rem;display:grid;gap:4px}
+.mapper b{font-family:var(--f-display);font-size:1rem}
+.mapper.on{box-shadow:0 0 0 4px color-mix(in srgb,var(--c6) 30%,transparent)}
+.alarm{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:760px){.alarm{grid-template-columns:minmax(0,1fr)}}
+.alarm>div{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:4px;align-content:start;min-width:0}
+.alarm .k{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.alarm code{white-space:normal;word-break:break-word}
+.alarm .spring{border-color:var(--c3);background:var(--c3s)}
+.alarm .raw{border-color:var(--c2);background:var(--c2s)}
+.timeline{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.timeline li{display:grid;grid-template-columns:86px minmax(0,1fr);gap:10px;align-items:center;padding:6px 10px;border-radius:8px;border:1px solid transparent;color:var(--muted);transition:all .2s}
+.timeline li.done{color:var(--ink)}
+.timeline li.on{border-color:var(--c4);background:var(--c4s);color:var(--ink)}
+.actor{font-family:var(--f-mono);font-size:.7rem;font-weight:600;text-align:center;border-radius:999px;padding:2px 6px;border:1.5px solid var(--c)}
+.conv-in{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-family:var(--f-mono)}
+/* hibernate-series extras */
+.log2{font-family:var(--f-mono);font-size:.78rem;background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:3px;max-height:260px;overflow:auto;min-height:60px}
+.log2 .s{color:var(--c5)} .log2 .e{color:var(--c4);font-weight:700} .log2 .i{color:var(--muted)} .log2 .g{color:var(--c3)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.ent{border:2px solid var(--c);background:color-mix(in srgb,var(--c) 12%,var(--surface));border-radius:10px;padding:8px 10px;font-family:var(--f-mono);font-size:.78rem;display:grid;gap:2px;min-width:120px}
+.ent b{font-family:var(--f-display);font-size:.9rem}
+.state{font-family:var(--f-mono);font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:2px 8px;border:1.5px solid var(--c);color:var(--c);display:inline-block}
+.dbt{border-collapse:collapse;font-family:var(--f-mono);font-size:.78rem;width:100%}
+.dbt caption{text-align:left;font-family:var(--f-display);font-weight:700;font-size:.9rem;padding-bottom:4px}
+.dbt th,.dbt td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+.dbt th{background:var(--sunk);color:var(--muted)}
+.dbt tr.new td{background:var(--c3s)} .dbt tr.chg td{background:var(--c2s)} .dbt tr.del td{background:var(--c4s);text-decoration:line-through}
+.dbt td.hl,.dbt th.hl{background:var(--c1s);outline:2px solid var(--c1)}
+.tw{overflow-x:auto}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.meter{height:14px;background:var(--sunk);border-radius:7px;overflow:hidden;border:1px solid var(--line)}
+.meter i{display:block;height:100%;background:var(--c2);transition:width .2s}
+.big{font-family:var(--f-display);font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums}
+.pill{font-family:var(--f-mono);font-size:.74rem;border-radius:999px;padding:2px 8px;background:var(--sunk)}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-family:var(--f-mono);font-size:.8rem}
+.flow span{border:1.5px solid var(--line);border-radius:8px;padding:5px 9px;background:var(--bg)}
+.flow span.on{border-color:var(--c4);background:var(--c4s)}
+.flow i{font-style:normal;color:var(--muted)}
+input[type=number]{font:inherit;font-size:.92rem;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 8px;width:6.5em;color:var(--ink)}
+label.ck{display:inline-flex;gap:6px;align-items:center;font-size:.92rem;cursor:pointer}
+.practice{display:flex;justify-content:center;padding-top:22px}
+.practice a{font-family:var(--f-display);font-weight:700;font-size:1.1rem;text-decoration:none;background:var(--ink);color:var(--bg);padding:12px 20px;border-radius:12px}
+section>*,.two>*,.grid2>*,.bench>*,.stack>*{min-width:0}
+:not(pre)>code{overflow-wrap:anywhere}
+</style>
+<div class="wrap">
+
+<header class="hero">
+  <div class="series"><a href="hibernate-intro.html">1 · Hibernate intro</a><a href="hibernate-internals.html">2 · Internals</a><a href="jpa-relationships.html">3 · Relationships</a><a href="jpa-fetching.html">4 · Cascade &amp; N+1</a><span class="here">5 · Spring Data JPA</span><a href="hibernate-quest.html" style="border-color:var(--c3);color:var(--c3);font-weight:700">⚔ Practice in Hibernate Quest</a></div>
+  <span class="eyebrow">Coder Army notes · interactive version · part 5 of 5</span>
+  <h1>Declare an interface. <em>Spring writes the repository.</em></h1>
+  <p class="lead prose">Every repository repeats the same save / find / count / delete code; only the entity type and id type change. Spring Data JPA captures that as <code>JpaRepository&lt;Student, Long&gt;</code>, builds the implementation at runtime, turns method names into queries, and adds sorting and pagination. Underneath it's still EntityManager and Hibernate.</p>
+  <div class="strip">
+    <div><b>Repository abstraction</b><span>A runtime proxy + SimpleJpaRepository implement your interface.</span></div>
+    <div><b>Queries from names</b><span><code>findByEmail</code>, <code>@Query</code> JPQL, native SQL.</span></div>
+    <div><b>Sort &amp; page</b><span><code>Sort</code>, <code>Pageable</code>, <code>Page</code> vs <code>Slice</code>.</span></div>
+  </div>
+  <ul class="toc">
+    <li><a href="#big"><span class="lvl">MAP</span>Big picture</a></li>
+    <li><a href="#analogy"><span class="lvl">BASIC</span>The order form</a></li>
+    <li><a href="#layers"><span class="lvl">BASIC</span>Layers &amp; boilerplate</a></li>
+    <li><a href="#vs"><span class="lvl">BASIC</span>JPA vs Spring Data JPA</a></li>
+    <li><a href="#hierarchy"><span class="lvl">CORE</span>Interface hierarchy</a></li>
+    <li><a href="#proxy"><span class="lvl">CORE</span>Repository proxy</a></li>
+    <li><a href="#methods"><span class="lvl">CORE</span>save() and friends</a></li>
+    <li><a href="#derived"><span class="lvl">CORE</span>Derived query parser</a></li>
+    <li><a href="#jpql"><span class="lvl">CORE</span>@Query JPQL &amp; joins</a></li>
+    <li><a href="#native"><span class="lvl">ADV</span>Native queries</a></li>
+    <li><a href="#sort"><span class="lvl">ADV</span>Sorting</a></li>
+    <li><a href="#page"><span class="lvl">ADV</span>Pagination</a></li>
+    <li><a href="#slice"><span class="lvl">ADV</span>Page vs Slice</a></li>
+    <li><a href="#gotcha"><span class="lvl">!</span>The gotcha</a></li>
+    <li><a href="#quiz"><span class="lvl">TEST</span>Quiz</a></li>
+  </ul>
+</header>
+
+<section id="big">
+  <span class="eyebrow">Big picture</span>
+  <h2>The whole topic on one map</h2>
+  <div class="bench"><div class="mm" id="mm-big"></div></div>
+</section>
+
+<section id="analogy">
+  <span class="eyebrow">The analogy</span>
+  <h2>A printed order form</h2>
+  <div class="prose stack">
+    <p>A print shop gives you a standard form: tick "copies", "staple", "colour". You never explain how the printer works; the shop already has procedures for every box. And if your request is written in the shop's fixed phrasing ("find by email", "sorted by name, page 2"), the clerk can carry it out without asking. For truly custom jobs, you attach your own instructions.</p>
+  </div>
+  <dl class="map">
+    <dt>The standard form</dt><dd><code>JpaRepository&lt;Student, Long&gt;</code>: inherited CRUD</dd>
+    <dt>The clerk</dt><dd>The <b>repository proxy</b> created at startup</dd>
+    <dt>Standard procedures</dt><dd><code>SimpleJpaRepository</code></dd>
+    <dt>Requests in the shop's phrasing</dt><dd><b>Derived query methods</b> (<code>findByEmail</code>)</dd>
+    <dt>Your own attached instructions</dt><dd><code>@Query</code> JPQL or native SQL</dd>
+    <dt>The printing machine</dt><dd><code>EntityManager</code> → Hibernate → JDBC</dd>
+  </dl>
+</section>
+
+<section id="layers">
+  <span class="eyebrow">Basic · where it sits</span>
+  <h2>One more layer on top</h2>
+  <div class="two">
+    <div class="mer"><pre class="mermaid">
+flowchart TB
+  S[Application service] --> R[Spring Data JPA repository]
+  R --> E[JPA EntityManager]
+  E --> H[Hibernate]
+  H --> J[JDBC driver]
+  J --> D[(Relational database)]
+    </pre></div>
+    <div class="stack">
+      <p>JPA + Hibernate removed SQL, binding and mapping (<code>entityManager.find(Student.class, id)</code>). But you still wrote a repository class per entity: <code>StudentRepository</code>, <code>DepartmentRepository</code>, <code>CourseRepository</code>… all doing save, findById, findAll, existsById, count, delete.</p>
+      <p>Only the <b>entity type</b> and <b>id type</b> change, so the idea becomes generic: <code>Repository&lt;EntityType, IdType&gt;</code>. That's the foundation of <b>Spring Data</b>, an umbrella with modules for JPA, JDBC, MongoDB, Redis, Elasticsearch, Cassandra, Neo4j.</p>
+    </div>
+  </div>
+  <div class="tabs" data-tabs="bp"><button class="tab" data-t="b">Before (hand-written)</button><button class="tab" data-t="a">After (Spring Data JPA)</button></div>
+  <div data-pane-of="bp" data-pane="b"><pre class="code"><code class="language-java">@Repository
+public class StudentRepository {
+    @PersistenceContext private EntityManager entityManager;
+    public void save(Student s)          { entityManager.persist(s); }
+    public Student findById(Long id)     { return entityManager.find(Student.class, id); }
+    public void delete(Student s)        { entityManager.remove(s); }
+}   // ...and the same again for every entity</code></pre></div>
+  <div data-pane-of="bp" data-pane="a"><pre class="code"><code class="language-java">public interface StudentRepository extends JpaRepository&lt;Student, Long&gt; { }
+// no implementation class, no @Repository needed; Boot scans the base package
+
+studentRepository.save(student);
+studentRepository.findById(id);      // Optional&lt;Student&gt;
+studentRepository.findAll();
+studentRepository.deleteById(id);</code></pre></div>
+</section>
+
+<section id="vs">
+  <span class="eyebrow">Basic · don't mix them up</span>
+  <h2>JPA vs Spring Data JPA</h2>
+  <div class="tbl-wrap"><table class="cmp"><tr><th>JPA</th><th>Spring Data JPA</th></tr>
+    <tr><td>Jakarta specification</td><td>Spring framework module</td></tr>
+    <tr><td>Defines persistence concepts and APIs</td><td>Builds a repository abstraction on top of JPA</td></tr>
+    <tr><td><code>@Entity @Id @OneToMany @ManyToOne EntityManager EntityManagerFactory TypedQuery</code></td><td><code>Repository CrudRepository ListCrudRepository PagingAndSortingRepository JpaRepository @Query @NativeQuery @Modifying @EntityGraph JpaSpecificationExecutor</code></td></tr>
+    <tr><td>Needs a provider (Hibernate)</td><td>Uses the configured provider underneath</td></tr>
+    <tr><td>Does <b>not</b> contain JpaRepository</td><td>Provides JpaRepository</td></tr></table></div>
+  <p class="prose">What Spring Data JPA does <b>not</b> remove: understanding entity mapping, transactions, managed/detached states, lazy loading and fetching, SQL performance, indexes and constraints, and N+1. It reduces boilerplate, not the need for sound persistence design.</p>
+</section>
+
+<section id="hierarchy">
+  <span class="eyebrow">Core · which interface?</span>
+  <h2>Pick what your repository extends</h2>
+  <p class="prose">Click an interface (or a combination) to see which methods callers get. Since Spring Data 3, the sorting hierarchy is separate from CRUD.</p>
+  <div class="bench">
+    <div class="toolbar" id="hi-opts"></div>
+    <div class="cards" id="hi-out"></div>
+    <div class="narr" id="hi-msg"></div>
+  </div>
+  <pre class="code"><code class="language-java">Repository&lt;T, ID&gt;
+├── CrudRepository&lt;T, ID&gt;
+│   └── ListCrudRepository&lt;T, ID&gt;
+└── PagingAndSortingRepository&lt;T, ID&gt;
+    └── ListPagingAndSortingRepository&lt;T, ID&gt;
+
+JpaRepository&lt;T, ID&gt;  extends  ListCrudRepository, ListPagingAndSortingRepository, QueryByExampleExecutor</code></pre>
+</section>
+
+<section id="proxy">
+  <span class="eyebrow">Core · internals</span>
+  <h2>Who answers each call?</h2>
+  <p class="prose"><code>new StudentRepository()</code> doesn't compile: it's an interface. At startup Spring Data creates a <b>repository proxy</b> implementing it. The proxy classifies each call and routes it. <code>SimpleJpaRepository</code> is the standard base implementation (it holds an <code>EntityManager</code> and entity information).</p>
+  <div class="bench">
+    <div class="toolbar" id="px-opts"></div>
+    <div class="flow" id="px-flow"></div>
+    <div class="narr" id="px-msg"></div>
+  </div>
+</section>
+
+<section id="methods">
+  <span class="eyebrow">Core · JpaRepository methods</span>
+  <h2>save() means "make this persistent", not "INSERT"</h2>
+  <p class="prose">Spring Data decides if the entity is <b>new</b> (by its id or version property, or <code>Persistable</code>). New → <code>persist()</code>. Not new → <code>merge()</code>, which returns a different, managed instance. Always use the return value.</p>
+  <div class="bench">
+    <div class="toolbar"><button class="btn sm" id="sv-new" type="button">save(new Student(), id = null)</button><button class="btn sm" id="sv-det" type="button">save(detached Student, id = 7)</button><button class="btn sm" id="sv-man" type="button">save(already managed Student)</button><button class="btn sm" id="sv-flush" type="button">saveAndFlush(new Student)</button></div>
+    <div class="flow" id="sv-flow"></div>
+    <div class="narr" id="sv-msg">Pick a case.</div>
+  </div>
+  <div class="tbl-wrap"><table class="cmp"><tr><th>Method</th><th>What to remember</th></tr>
+    <tr><td><code>saveAll(list)</code></td><td>Calls save() per entity. Not one multi-row INSERT; JDBC batching is separate config.</td></tr>
+    <tr><td><code>findById(id)</code></td><td><code>Optional&lt;T&gt;</code>; delegates to <code>EntityManager.find()</code>, so the context is checked first.</td></tr>
+    <tr><td><code>findAll()</code></td><td>Loads everything. Fine for small tables, dangerous for big ones.</td></tr>
+    <tr><td><code>existsById(id)</code></td><td>An existence query (count or equivalent), not a full load.</td></tr>
+    <tr><td><code>count()</code></td><td><code>SELECT COUNT(*) FROM students</code></td></tr>
+    <tr><td><code>delete / deleteById</code></td><td>Ends at a managed entity; detached ones may be merged/loaded first.</td></tr>
+    <tr><td><code>deleteAll()</code></td><td>May process entities one by one. Batch methods (<code>deleteAllInBatch</code>) behave differently around cascades, callbacks, context.</td></tr>
+    <tr><td><code>flush()</code> / <code>saveAndFlush()</code></td><td>Send SQL now (not commit). Use to catch a constraint violation early; not for every save.</td></tr>
+    <tr><td><code>getReferenceById(id)</code></td><td>A JPA-specific operation in JpaRepository.</td></tr></table></div>
+  <h3>You don't need save() to update a managed entity</h3>
+  <pre class="code"><code class="language-java">@Transactional
+public void renameStudent(Long id, String newName) {
+    Student student = studentRepository.findById(id).orElseThrow();   // managed
+    student.setName(newName);                                         // dirty checking → UPDATE at flush
+    // studentRepository.save(student);   ← redundant (some teams keep it for consistency)
+}</code></pre>
+</section>
+
+<section id="derived">
+  <span class="eyebrow">Core · query derivation</span>
+  <h2>Type a method name, get the query</h2>
+  <p class="prose">Spring Data parses the name into a <b>subject</b> (<code>findBy</code>, <code>existsBy</code>, <code>countBy</code>, <code>deleteBy</code>, <code>findTop5By</code>…) and a <b>predicate</b> (properties + keywords). Default lookup: use a declared query if there is one, otherwise derive from the name. Entity: <code>Student { name, email, age, active, admissionDate, department → Department { name } }</code>.</p>
+  <div class="bench">
+    <input type="text" id="dq-in" value="findTop5ByActiveTrueOrderByAgeDesc" style="width:100%;font-family:var(--f-mono)">
+    <div class="toolbar" id="dq-ex"></div>
+    <div class="two"><pre class="code" id="dq-out"></pre><div class="narr" id="dq-msg"></div></div>
+  </div>
+  <div class="tbl-wrap"><table class="cmp"><tr><th>Keyword</th><th>Example</th><th>Meaning</th></tr>
+    <tr><td>(none) / And / Or</td><td><code>findByNameAndAge</code></td><td>= ; both ; either</td></tr>
+    <tr><td>GreaterThan / LessThan / Between</td><td><code>findByAgeBetween(min, max)</code></td><td>&gt; ; &lt; ; inclusive range</td></tr>
+    <tr><td>Like / Containing / StartingWith / EndingWith</td><td><code>findByNameContaining("har")</code></td><td>caller's pattern ; %v% ; v% ; %v</td></tr>
+    <tr><td>In / NotIn</td><td><code>findByAgeIn(Collection)</code></td><td>in / not in a collection</td></tr>
+    <tr><td>IsNull / IsNotNull · True / False</td><td><code>findByDepartmentIsNull()</code></td><td>null checks ; boolean</td></tr>
+    <tr><td>IgnoreCase · OrderBy · Top/First</td><td><code>findTop5ByOrderByAgeDesc()</code></td><td>case-insensitive ; static order ; limit</td></tr></table></div>
+  <p class="prose"><b>Like vs Containing:</b> with <code>Like</code> you pass <code>"%har%"</code>; with <code>Containing</code> you pass <code>"har"</code> and Spring adds the %. <b>Top without OrderBy</b> has no reliable meaning: the database has no natural row order. Long names like <code>findTop10ByNameContainingIgnoreCaseAndAgeGreaterThanAndActiveTrue…</code> are a sign to switch to <code>@Query</code>, specifications, Query by Example, Querydsl or a custom implementation.</p>
+</section>
+
+<section id="jpql">
+  <span class="eyebrow">Core · @Query</span>
+  <h2>JPQL talks about entities, not tables</h2>
+  <div class="bench">
+    <div class="toolbar"><button class="btn sm on" id="jq-j" type="button">JPQL</button><button class="btn sm" id="jq-s" type="button">What Hibernate sends (SQL)</button></div>
+    <pre class="code" id="jq-code"></pre>
+    <div class="narr" id="jq-msg"></div>
+  </div>
+  <p class="prose">Named parameters (<code>:email</code> + <code>@Param("email")</code>) read better than positional ones (<code>?1</code>, <code>?2</code>, one-based). Joins follow the mapped relationship: <code>JOIN s.department d</code>, never <code>s.department_id = d.id</code>. Path navigation <code>s.department.name</code> is an implicit join; use an explicit join when you need an alias, several conditions on it, a join type, or to select from both.</p>
+  <h3>Inner vs left join</h3>
+  <div class="bench">
+    <div class="toolbar"><button class="btn sm on" id="jn-i" type="button">JOIN s.department d</button><button class="btn sm" id="jn-l" type="button">LEFT JOIN s.department d</button></div>
+    <div class="tw"><table class="dbt" id="jn-t"></table></div>
+    <div class="narr" id="jn-msg"></div>
+  </div>
+  <p class="prose note">Returning <code>List&lt;Object[]&gt;</code> works, but a DTO or interface projection is clearer for higher layers. Static order: <code>ORDER BY d.name ASC, s.name ASC</code> in the query. Dynamic order: add a <code>Sort</code> parameter.</p>
+</section>
+
+<section id="native">
+  <span class="eyebrow">Advanced · native SQL</span>
+  <h2>When JPQL isn't enough</h2>
+  <p class="prose">Use native SQL for database-specific functions or syntax, CTEs and advanced SQL, existing SQL that's awkward in JPQL, or precise control. The cost: you're coupled to the schema and maybe the vendor.</p>
+  <pre class="code"><code class="language-java">@Query(value = """
+        SELECT * FROM students WHERE email = :email
+        """, nativeQuery = true)                         // table + column names now
+Optional&lt;Student&gt; findByEmailUsingNativeQuery(@Param("email") String email);
+
+@NativeQuery("""
+        SELECT * FROM students WHERE age &gt;= ?1 AND active = ?2
+        """)                                             // recent composed form
+List&lt;Student&gt; findStudentsUsingNativeQuery(Integer minimumAge, Boolean active);</code></pre>
+</section>
+
+<section id="sort">
+  <span class="eyebrow">Advanced · sorting</span>
+  <h2>Order is part of query design</h2>
+  <p class="prose">Without ORDER BY the database guarantees no meaningful order. <code>Sort</code> uses <b>entity property</b> names (<code>admissionDate</code>), ascending by default, and must not be null (use <code>Sort.unsorted()</code>). Simulate <code>GET /students?sortBy=…&amp;direction=…</code> with an allowlist.</p>
+  <div class="bench">
+    <div class="toolbar"><label class="ck">sortBy <input type="text" id="so-p" value="name" size="16"></label><label class="ck">direction <input type="text" id="so-d" value="asc" size="6"></label><label class="ck"><input type="checkbox" id="so-tie" checked> tie-breaker id</label><label class="ck"><input type="checkbox" id="so-allow" checked> validate against allowlist</label></div>
+    <div class="two"><pre class="code" id="so-java"></pre><div class="stack"><div class="tw"><table class="dbt" id="so-t"></table></div><div class="narr" id="so-msg"></div></div></div>
+  </div>
+</section>
+
+<section id="page">
+  <span class="eyebrow">Advanced · pagination</span>
+  <h2>Ask for a window, not the whole table</h2>
+  <p class="prose"><code>findAll()</code> on two million rows hurts everywhere: DB reads, network, entity objects, persistence-context memory, JSON size. A <code>Pageable</code> (usually <code>PageRequest.of(page, size, sort)</code>) asks for one window. Pages are zero-based; <b>offset = page × size</b>. Page number must be ≥ 0, size &gt; 0; cap size at the API boundary.</p>
+  <div class="bench">
+    <div class="toolbar"><label class="ck">total rows <input type="number" id="pg-t" value="45" min="0"></label><label class="ck">page <input type="number" id="pg-p" value="2" min="-1"></label><label class="ck">size <input type="number" id="pg-s" value="20" min="0"></label><label class="ck">max size <input type="number" id="pg-m" value="100" min="1"></label></div>
+    <div class="two"><pre class="code" id="pg-sql"></pre><pre class="code" id="pg-meta"></pre></div>
+    <div class="narr" id="pg-msg"></div>
+  </div>
+  <h3>Count queries</h3>
+  <p class="prose">10 rows of content can't tell you whether there are 11 or 10 million in total. For <code>totalElements</code>/<code>totalPages</code>, a <code>Page</code> usually needs a second <code>COUNT</code> query. Spring derives it for simple methods. For complex JPQL (joins, grouping, projections, fetch joins, native SQL), give <code>countQuery</code>: same filters, no ORDER BY, no fetching.</p>
+  <pre class="code"><code class="language-java">@Query(value = """
+        SELECT s FROM Student s JOIN s.department d
+        WHERE s.active = true AND d.name = :departmentName
+        """,
+       countQuery = """
+        SELECT COUNT(s) FROM Student s JOIN s.department d
+        WHERE s.active = true AND d.name = :departmentName
+        """)
+Page&lt;Student&gt; findActiveStudentsByDepartment(@Param("departmentName") String departmentName, Pageable pageable);</code></pre>
+</section>
+
+<section id="slice">
+  <span class="eyebrow">Advanced · Page vs Slice</span>
+  <h2>Do you need the total?</h2>
+  <div class="bench">
+    <div class="toolbar"><button class="btn sm on" id="sl-p" type="button">Page&lt;Student&gt;  ("page 3 of 25")</button><button class="btn sm" id="sl-s" type="button">Slice&lt;Student&gt;  ("load more")</button></div>
+    <div class="two"><div class="log2" id="sl-log"></div><pre class="code" id="sl-api"></pre></div>
+  </div>
+  <div class="tbl-wrap"><table class="cmp"><tr><th></th><th>Page&lt;T&gt;</th><th>Slice&lt;T&gt;</th></tr>
+    <tr><td>Content, number, size, hasNext/Previous</td><td>Yes</td><td>Yes</td></tr>
+    <tr><td>Total elements / total pages</td><td>Yes</td><td>No</td></tr>
+    <tr><td>Count query</td><td>Commonly</td><td>No (fetches one extra row to know hasNext)</td></tr>
+    <tr><td>Good for</td><td>Numbered pagination</td><td>Infinite scroll, "load more"</td></tr></table></div>
+</section>
+
+<section id="gotcha">
+  <span class="eyebrow">The gotcha</span>
+  <div class="gotcha">
+    <h2>Ignoring what save() returns</h2>
+    <p class="prose">For a detached entity, save() calls merge(), which returns a <i>new</i> managed instance. The object you passed stays detached.</p>
+    <div class="vs">
+      <div><div class="tag bad">✗ Later change is lost</div><pre class="code"><code class="language-java">studentRepository.save(detachedStudent);
+detachedStudent.setAge(25);   // not tracked</code></pre></div>
+      <div><div class="tag ok">✓ Keep the managed instance</div><pre class="code"><code class="language-java">Student managed = studentRepository.save(detachedStudent);
+managed.setAge(25);           // dirty-checked</code></pre></div>
+    </div>
+    <ul class="traps">
+      <li><b>PagingAndSortingRepository alone</b> doesn't give you <code>save()</code> since Spring Data 3.</li>
+      <li><b>findTop5By… without OrderBy</b> returns an arbitrary five.</li>
+      <li><b>Raw client input in Sort</b>: validate against an allowlist.</li>
+      <li><b>Paging on a non-unique sort</b> can shuffle rows between pages: add <code>id</code> as a tie-breaker.</li>
+      <li><b>JpaRepository is Spring Data</b>, not part of the JPA spec.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="quiz">
+  <span class="eyebrow">Recall</span>
+  <h2>Answer out loud before opening</h2>
+  <details class="q"><summary>1. How can an interface be injected and called?</summary><p>Spring Data creates a runtime proxy implementing it; standard methods route to SimpleJpaRepository, which uses EntityManager.</p></details>
+  <details class="q"><summary>2. What does save() do for a new vs existing entity?</summary><p>New (null id / version) → persist. Otherwise → merge, returning a managed instance.</p></details>
+  <details class="q"><summary>3. Write the JPQL for findByAgeGreaterThanAndActiveTrue(Integer age).</summary><p><code>SELECT s FROM Student s WHERE s.age &gt; ?1 AND s.active = true</code></p></details>
+  <details class="q"><summary>4. Like vs Containing?</summary><p>Like: the caller supplies %. Containing: Spring wraps the value as %value%.</p></details>
+  <details class="q"><summary>5. Predict: page 2, size 10. Offset?</summary><p>20. Records 21–30.</p></details>
+  <details class="q"><summary>6. 45 rows, size 20: how many pages and how many on the last?</summary><p>3 pages; the last has 5.</p></details>
+  <details class="q"><summary>7. When do you give an explicit countQuery?</summary><p>For complex content queries (joins, grouping, projections, fetch joins, native SQL). Same filters, no ordering/fetching.</p></details>
+  <details class="q"><summary>8. Page vs Slice in one line?</summary><p>Page adds totals (usually needs a count query); Slice only knows if there's a next chunk.</p></details>
+  <div class="practice"><a href="hibernate-quest.html#l5-1">Practice this in Hibernate Quest →</a></div>
+</section>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const BR = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--c6)'];
+/* ---------- reusable: clickable mindmap ---------- */
+function mindmap(el, data, openDepth = 1){
+  el.innerHTML = `<div class="mm-tools"><button class="btn sm" type="button" data-a="open">Expand all</button><button class="btn sm" type="button" data-a="close">Fold to main branches</button></div><div class="mm-tree"></div><div class="mm-detail"></div>`;
+  const tree = el.querySelector('.mm-tree'), det = el.querySelector('.mm-detail');
+  let sel = null;
+  function show(node, path, color, btn){
+    if(sel) sel.classList.remove('sel'); sel = btn; btn.classList.add('sel');
+    det.style.setProperty('--c', color);
+    det.innerHTML = `<span class="path">${esc(path.join('  ›  '))}</span><b>${esc(node.t)}</b>${node.d || ''}`;
+  }
+  function build(node, level, color, path){
+    const w = document.createElement('div');
+    w.className = 'mm-node lv' + Math.min(level, 3);
+    w.style.setProperty('--c', color);
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'mm-label';
+    b.innerHTML = esc(node.t) + (node.c ? `<span class="mm-count">+${node.c.length}</span>` : '');
+    w.append(b);
+    const p = path.concat(node.t);
+    if(node.c){
+      const k = document.createElement('div'); k.className = 'mm-kids';
+      node.c.forEach((ch, i) => k.append(build(ch, level + 1, level === 0 ? BR[i % BR.length] : color, p)));
+      w.append(k);
+      if(level >= openDepth) w.classList.add('closed');
+    }
+    b.onclick = () => {
+      if(node.c && level > 0){
+        if(w.classList.contains('closed')) w.classList.remove('closed');
+        else if(sel === b) w.classList.add('closed');
+      }
+      show(node, p, color, b);
+    };
+    if(level === 0) setTimeout(() => show(node, p, 'var(--ink)', b));
+    return w;
+  }
+  tree.append(build(data, 0, 'var(--ink)', []));
+  el.querySelector('[data-a=open]').onclick = () => tree.querySelectorAll('.mm-node').forEach(n => n.classList.remove('closed'));
+  el.querySelector('[data-a=close]').onclick = () => tree.querySelectorAll('.mm-node.lv1').forEach(n => n.classList.add('closed'));
+}
+
+/* ---------- reusable: stepper ---------- */
+function stepper(root, frames, render, delay = 1600){
+  const bar = document.createElement('div'); bar.className = 'toolbar';
+  bar.innerHTML = `<button class="btn" type="button" data-a="back">◀ Back</button><button class="btn primary" type="button" data-a="next">Next ▶</button><button class="btn" type="button" data-a="play">▶ Play</button><button class="btn" type="button" data-a="reset">↺ Restart</button><span class="score" data-a="n"></span>`;
+  root.prepend(bar);
+  const st = { i:0, t:null, frames };
+  const draw = () => {
+    render(st.frames[st.i], st.i);
+    bar.querySelector('[data-a=n]').textContent = `step ${st.i + 1} / ${st.frames.length}`;
+    bar.querySelector('[data-a=next]').disabled = st.i >= st.frames.length - 1;
+    bar.querySelector('[data-a=back]').disabled = st.i === 0;
+    bar.querySelector('[data-a=play]').textContent = st.t ? '⏸ Pause' : '▶ Play';
+  };
+  const stop = () => { clearTimeout(st.t); st.t = null; };
+  const tick = () => { if(st.i < st.frames.length - 1){ st.i++; st.t = setTimeout(tick, delay); } else stop(); draw(); };
+  bar.onclick = e => {
+    const a = e.target.closest('button')?.dataset.a; if(!a) return;
+    if(a === 'next'){ stop(); st.i = Math.min(st.frames.length - 1, st.i + 1); }
+    if(a === 'back'){ stop(); st.i = Math.max(0, st.i - 1); }
+    if(a === 'reset'){ stop(); st.i = 0; }
+    if(a === 'play'){ if(st.t) stop(); else { if(st.i >= st.frames.length - 1) st.i = 0; st.t = setTimeout(tick, 250); } }
+    draw();
+  };
+  draw();
+  return { reload(f){ stop(); st.frames = f; st.i = Math.min(st.i, f.length - 1); draw(); }, draw };
+}
+
+/* ---------- big mindmap ---------- */
+/* ---------- tabs: <div class="tabs" data-tabs="id"> buttons data-t="key"; panes [data-pane-of="id"][data-pane="key"] ---------- */
+document.querySelectorAll('[data-tabs]').forEach(tb => {
+  const id = tb.dataset.tabs;
+  const sel = k => { tb.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.t === k));
+    document.querySelectorAll(`[data-pane-of="${id}"]`).forEach(p => p.hidden = p.dataset.pane !== k); };
+  tb.onclick = e => { const b = e.target.closest('.tab'); if(b) sel(b.dataset.t); };
+  sel(tb.querySelector('.tab').dataset.t);
+});
+/* ---------- tiny log helper ---------- */
+function logger(el){ return { clear(){ el.innerHTML=''; }, add(cls, html){ const d=document.createElement('div'); d.className=cls; d.innerHTML=html; el.append(d); el.scrollTop=el.scrollHeight; } }; }
+/* ---------- quick quiz rows: <div class="game" data-game> with .qrow[data-a="idx"] containing .opts buttons ---------- */
+document.querySelectorAll('[data-game]').forEach(g => {
+  const sc = g.querySelector('.score'); let got = 0, tot = g.querySelectorAll('.qrow').length;
+  g.querySelectorAll('.qrow').forEach(r => r.querySelectorAll('.opts button').forEach((b, i) => b.onclick = () => {
+    if(r.dataset.done) return; r.dataset.done = 1; const ok = i === +r.dataset.a; if(ok) got++;
+    r.classList.add(ok ? 'right' : 'wrong'); r.querySelector('.fb').innerHTML = (ok ? '✓ ' : '✗ ') + r.dataset.ex;
+    if(sc) sc.textContent = `${got} / ${tot} right`; }));
+});
+
+mindmap($('#mm-big'), {t:'Spring Data JPA', d:'A repository abstraction on top of JPA and Hibernate.', c:[
+  {t:'Why', d:'Repository boilerplate repeats per entity.', c:[{t:'Generic idea', d:'Repository&lt;EntityType, IdType&gt;'},{t:'Spring Data', d:'Umbrella: JPA, JDBC, MongoDB, Redis…'}]},
+  {t:'Interfaces', d:'Pick the contract.', c:[{t:'Repository', d:'Marker; declare only what you want.'},{t:'CrudRepository', d:'save, findById, findAll (Iterable)…'},{t:'ListCrudRepository', d:'Same but List.'},{t:'PagingAndSorting', d:'findAll(Sort / Pageable). No save since v3.'},{t:'JpaRepository', d:'All of it + flush, saveAndFlush, getReferenceById, batch deletes.'}]},
+  {t:'Internals', d:'Runtime proxy.', c:[{t:'SimpleJpaRepository', d:'Standard CRUD.'},{t:'Routing', d:'CRUD, derived, @Query, default methods, fragments.'},{t:'save()', d:'persist if new, else merge.'}]},
+  {t:'Queries', d:'Three ways.', c:[{t:'Derived', d:'findByEmail, existsBy, countBy, Top5…OrderBy.'},{t:'@Query JPQL', d:'Entities, fields, relationships; :named or ?1.'},{t:'Native', d:'nativeQuery = true / @NativeQuery.'}]},
+  {t:'Sort & page', d:'Controlled order and windows.', c:[{t:'Sort', d:'Entity properties; allowlist input; tie-breaker.'},{t:'Pageable', d:'PageRequest.of(page, size, sort); offset = page × size.'},{t:'Page', d:'Totals; count query.'},{t:'Slice', d:'hasNext only; cheaper.'}]}
+]});
+
+/* hierarchy */
+const HM = {
+  Repository:{m:[], note:'Marker interface. You declare exactly the methods you want, e.g. save + findById + findAll, and no delete.'},
+  CrudRepository:{m:['save','saveAll','findById','findAll → Iterable','existsById','count','deleteById','delete'], note:'Generic CRUD. Multi-result methods return Iterable.'},
+  ListCrudRepository:{m:['save','saveAll','findById','findAll → List','existsById','count','deleteById','delete'], note:'Like CrudRepository, but List instead of Iterable.'},
+  PagingAndSortingRepository:{m:['findAll(Sort)','findAll(Pageable) → Page'], note:'<span class="bad">No save() or deleteById()!</span> Since Spring Data 3 this hierarchy is separate from CRUD.'},
+  'ListCrud + ListPagingAndSorting':{m:['save','saveAll','findById','findAll → List','existsById','count','deleteById','delete','findAll(Sort) → List','findAll(Pageable) → Page'], note:'Combining the lower-level contracts explicitly.'},
+  JpaRepository:{m:['save','saveAll','findById','findAll → List','existsById','count','delete','deleteById','deleteAll','findAll(Sort)','findAll(Pageable)','flush','saveAndFlush','saveAllAndFlush','getReferenceById','deleteAllInBatch','deleteAllByIdInBatch','Query by Example'], note:'The convenient default in JPA apps: CRUD + paging/sorting + JPA-specific operations.'}};
+$('#hi-opts').innerHTML=Object.keys(HM).map(k=>`<button class="btn sm" data-k="${k}">${k}</button>`).join('');
+function hi(k){ $('#hi-opts').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
+  const m=HM[k].m; $('#hi-out').innerHTML = (m.length?m:['(nothing inherited)']).map(x=>`<div class="card"><b><code>${esc(x)}</code></b></div>`).join(''); $('#hi-msg').innerHTML=`<code>interface StudentRepository extends ${k==='ListCrud + ListPagingAndSorting'?'ListCrudRepository&lt;Student, Long&gt;, ListPagingAndSortingRepository&lt;Student, Long&gt;':k+'&lt;Student, Long&gt;'}</code><span class="real">${HM[k].note}</span>`; }
+$('#hi-opts').onclick=e=>{ const b=e.target.closest('button'); if(b) hi(b.dataset.k); }; hi('JpaRepository');
+
+/* proxy routing */
+const PX = {
+  'findById(1L)':[['StudentService','proxy','SimpleJpaRepository.findById','EntityManager.find','Hibernate checks context','SQL if needed'],'Inherited CRUD method → the base implementation.'],
+  'findByEmail(email)':[['StudentService','proxy','prepared query from method name','bind parameter','EntityManager runs JPQL','Hibernate SQL'],'Derived query: parsed from the name at startup, executed with your argument.'],
+  '@Query findStudentByEmail':[['StudentService','proxy','declared JPQL','bind :email','EntityManager runs it','Hibernate SQL'],'Declared query takes priority over name derivation.'],
+  'default method':[['StudentService','proxy','your interface default method body'],'Plain Java default method in the interface.'],
+  'custom fragment':[['StudentService','proxy','your Impl class (fragment)','whatever you wrote'],'Developer-provided implementation for complex logic.']};
+$('#px-opts').innerHTML=Object.keys(PX).map(k=>`<button class="btn sm" data-k="${esc(k)}">${esc(k)}</button>`).join('');
+let pxT=null;
+function px(k){ clearTimeout(pxT); $('#px-opts').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.k===k)); const [steps,note]=PX[k]; let i=0;
+  const draw=()=>{ $('#px-flow').innerHTML=steps.map((s,j)=>`<span class="${j===i?'on':''}">${esc(s)}</span>`).join('<i>→</i>'); if(i<steps.length-1){ i++; pxT=setTimeout(draw,500);} }; draw(); $('#px-msg').innerHTML=note; }
+$('#px-opts').onclick=e=>{ const b=e.target.closest('button'); if(b) px(b.dataset.k); }; px('findById(1L)');
+
+/* save */
+const SV={
+  new:[['save(student)','isNew? id == null → yes','EntityManager.persist(student)','INSERT at flush','returns the same object'],'New entity → <b>persist</b>. The argument itself becomes managed.'],
+  det:[['save(student#7)','isNew? id = 7 → no','EntityManager.merge(student)','SELECT row 7 if not in context','copy state onto managed instance','returns the MANAGED copy'],'Detached → <b>merge</b>. <span class="bad">The argument stays detached.</span> Use <code>Student saved = repository.save(s);</code>'],
+  man:[['save(managedStudent)','isNew? no','merge → already managed, returns it','UPDATE comes from dirty checking at flush'],'Redundant from a JPA view: the UPDATE comes from dirty checking, not from save().'],
+  flush:[['saveAndFlush(student)','save() → persist','flush()','INSERT runs now','constraint errors surface here','commit still later'],'Use when you need the database to check now (e.g. a unique email). Flush ≠ commit.']};
+['new','det','man','flush'].forEach(k=>$('#sv-'+k).onclick=()=>{ ['new','det','man','flush'].forEach(x=>$('#sv-'+x).classList.toggle('on',x===k)); $('#sv-flow').innerHTML=SV[k][0].map(s=>`<span>${esc(s)}</span>`).join('<i>→</i>'); $('#sv-msg').innerHTML=SV[k][1]; });
+
+/* derived query parser */
+const PROPS=[['DepartmentName','department.name'],['AdmissionDate','admissionDate'],['Department','department'],['Active','active'],['Email','email'],['Name','name'],['Age','age']];
+const KW=[['IsNotNull','IS NOT NULL',0],['NotNull','IS NOT NULL',0],['IsNull','IS NULL',0],['Null','IS NULL',0],['NotIn','NOT IN',1],['In','IN',1],['GreaterThanEqual','>=',1],['LessThanEqual','<=',1],['GreaterThan','>',1],['LessThan','<',1],['Between','BETWEEN',2],['NotLike','NOT LIKE',1],['Like','LIKE',1],['Containing','LIKE %…%',1],['StartingWith','LIKE …%',1],['EndingWith','LIKE %…',1],['True','= true',0],['False','= false',0],['Not','<>',1],['Is','=',1],['Equals','=',1],['','=',1]];
+function parseDQ(src){
+  const m=src.match(/^(find|read|get|query|search|stream|count|exists|delete|remove)(Distinct)?(?:(Top|First)(\d*))?(?:[A-Z]\w*?)??By(.*)$/);
+  if(!m) return {err:'Start with a subject like <code>findBy</code>, <code>existsBy</code>, <code>countBy</code>, <code>deleteBy</code> or <code>findTop5By</code>.'};
+  const [,verb,distinct,lim,limN,rest]=m; let pred=rest, order='';
+  const ob=rest.indexOf('OrderBy'); if(ob>=0){ pred=rest.slice(0,ob); order=rest.slice(ob+7); }
+  const params=[]; let p=0; const conds=[];
+  if(pred){ const parts=pred.split(/(And|Or)(?=[A-Z])/);
+    for(let i=0;i<parts.length;i+=2){ let part=parts[i], ic=false; if(part.endsWith('IgnoreCase')){ ic=true; part=part.slice(0,-10); } else if(part.endsWith('AllIgnoreCase')){ ic=true; part=part.slice(0,-13);}
+      const pr=PROPS.find(([n])=>part.startsWith(n)); if(!pr) return {err:`<code>${esc(part)}</code> doesn't start with a Student property (Name, Email, Age, Active, AdmissionDate, Department, DepartmentName). Spring would fail at startup: <i>No property found</i>.`};
+      const kwS=part.slice(pr[0].length); const kw=KW.find(([k])=>k===kwS); if(!kw) return {err:`Unknown keyword <code>${esc(kwS)}</code> after ${pr[0]}.`};
+      let f='s.'+pr[1]; if(ic) f=`UPPER(${f})`; const ph=()=>{ p++; const v='?'+p; return ic?`UPPER(${v})`:v; };
+      let c; const op=kw[1];
+      if(kw[2]===0) c=`${f} ${op}`; else if(op==='BETWEEN'){ const a=ph(), b=ph(); c=`${f} BETWEEN ${a} AND ${b}`; params.push(pr[1]+' (min)', pr[1]+' (max)'); }
+      else if(op.startsWith('LIKE ')){ const v=ph(); const pat=op==='LIKE %…%'?`'%' || ${v} || '%'`:op==='LIKE …%'?`${v} || '%'`:`'%' || ${v}`; c=`${f} LIKE ${pat}`; params.push(pr[1]+' (Spring adds %)'); }
+      else if(op==='IN'||op==='NOT IN'){ c=`${f} ${op} ${ph()}`; params.push('Collection of '+pr[1]); }
+      else { c=`${f} ${op} ${ph()}`; params.push(pr[1]+(op==='LIKE'?' (you supply %)':'')); }
+      conds.push((i>0?parts[i-1].toUpperCase()+' ':'')+c); } }
+  let orderSql=''; if(order){ const segs=order.match(/[A-Z][a-z]*(?:[A-Z][a-z]*)*?(?:Asc|Desc)|[A-Z]\w*$/g)||[]; const os=[]; let o=order;
+    while(o){ const pr=PROPS.find(([n])=>o.startsWith(n)); if(!pr) return {err:`OrderBy: <code>${esc(o)}</code> isn't a property.`}; o=o.slice(pr[0].length); let d='ASC'; if(o.startsWith('Desc')){ d='DESC'; o=o.slice(4);} else if(o.startsWith('Asc')) o=o.slice(3); os.push(`s.${pr[1]} ${d}`); }
+    orderSql='\nORDER BY '+os.join(', '); }
+  const head = verb==='count'?'SELECT COUNT(s)':verb==='exists'?'SELECT (COUNT(s) > 0)  -- existence check':(verb==='delete'||verb==='remove')?'-- load matching, then remove each\nSELECT s':`SELECT ${distinct?'DISTINCT ':''}s`;
+  const join = conds.some(c=>c.includes('s.department.name'))?'  -- implicit join on department':'';
+  const n = lim?(limN||'1'):'';
+  const ret = verb==='count'?'long':verb==='exists'?'boolean':(verb==='delete'||verb==='remove')?'void / long':n==='1'?'Optional<Student>':'List<Student>';
+  return {jpql:`${head}\nFROM Student s${conds.length?'\nWHERE '+conds.join('\n  '):''}${join}${orderSql}${n?`\n-- limited to ${n} result${n==='1'?'':'s'}`:''}`, params, ret, warn: n && !order ? 'Top/First without OrderBy: "first" has no reliable meaning; the database has no natural order.' : (pred.length>60?'Long name. Consider @Query for readability.':'')};
+}
+function dq(){ const s=$('#dq-in').value.trim(); const r=parseDQ(s);
+  if(r.err){ $('#dq-out').textContent='—'; $('#dq-msg').innerHTML='<span class="bad">✗</span> '+r.err; return; }
+  $('#dq-out').textContent=`${r.ret} ${s}(${r.params.map((p,i)=>'arg'+(i+1)).join(', ')});\n\n-- conceptual JPQL\n${r.jpql}`;
+  $('#dq-msg').innerHTML = (r.params.length?'Parameters, in order:<br>'+r.params.map((p,i)=>`<code>?${i+1}</code> ← ${esc(p)}`).join('<br>'):'No parameters.') + (r.warn?`<span class="real bad">${r.warn}</span>`:''); }
+const DQE=['findByEmail','existsByEmail','countByActiveTrue','findByAgeGreaterThanAndActiveTrue','findByNameContainingIgnoreCase','findByNameLike','findByAgeBetween','findByDepartmentIsNull','findByDepartmentName','findTop5ByOrderByAgeDesc','findFirstByDepartmentNameOrderByAgeDesc','findTop5ByActiveTrue','findByAdress'];
+$('#dq-ex').innerHTML=DQE.map(x=>`<button class="btn sm">${x}</button>`).join(''); $('#dq-ex').onclick=e=>{ const b=e.target.closest('button'); if(b){ $('#dq-in').value=b.textContent; dq(); } };
+$('#dq-in').oninput=dq; dq();
+
+/* jpql vs sql */
+let jqS=false;
+function jq(){ $('#jq-j').classList.toggle('on',!jqS); $('#jq-s').classList.toggle('on',jqS);
+  $('#jq-code').textContent = jqS ? 'select s.id, s.active, s.age, s.department_id, s.email, s.name\nfrom students s\njoin departments d on d.id = s.department_id\nwhere d.active = true' : '@Query("""\n       SELECT s\n       FROM Student s\n       JOIN s.department d\n       WHERE d.active = true\n       """)\nList<Student> findStudentsInActiveDepartments();';
+  $('#jq-msg').innerHTML = jqS ? 'Hibernate filled in table names, columns and the join condition from the mapping.' : '<code>Student</code> is the entity name, <code>s</code> its alias, <code>s.department</code> a mapped relationship. No table or column names.'; }
+$('#jq-j').onclick=()=>{jqS=false;jq();}; $('#jq-s').onclick=()=>{jqS=true;jq();}; jq();
+let jnL=false;
+function jn(){ $('#jn-i').classList.toggle('on',!jnL); $('#jn-l').classList.toggle('on',jnL);
+  const rows=[['Aditya','CSE'],['Rohit','IT'],['Harsh',null]];
+  $('#jn-t').innerHTML='<caption>SELECT s.name, d.name FROM Student s '+(jnL?'LEFT JOIN':'JOIN')+' s.department d</caption><tr><th>s.name</th><th>d.name</th></tr>'+rows.map(r=>`<tr class="${r[1]===null&&!jnL?'del':''}"><td>${r[0]}</td><td>${r[1]??'null'}</td></tr>`).join('');
+  $('#jn-msg').innerHTML = jnL ? 'Left join keeps students with no department (Harsh → null).' : 'Inner join drops Harsh: his department is null, so there\'s no match.'; }
+$('#jn-i').onclick=()=>{jnL=false;jn();}; $('#jn-l').onclick=()=>{jnL=true;jn();}; jn();
+
+/* sort */
+const SO=[[1,'Priya',22,'2024-07-01'],[2,'Aman',24,'2023-07-01'],[3,'Priya',21,'2025-01-10'],[4,'Rahul',24,'2024-01-15']];
+const ALLOW=['name','age','admissionDate'];
+function so(){ const p=$('#so-p').value.trim(), d=$('#so-d').value.trim(), tie=$('#so-tie').checked, al=$('#so-allow').checked;
+  $('#so-java').textContent=`private static final Set<String> ALLOWED_SORT_FIELDS =\n        Set.of("name", "age", "admissionDate");\n\nSort sort = Sort.by(Sort.Direction.fromString("${d}"), "${p}")${tie?'\n        .and(Sort.by("id").ascending())':''};\nList<Student> students = studentRepository.findAll(sort);`;
+  let err=null; const dir=d.toLowerCase();
+  if(al && !ALLOW.includes(p)) err=`IllegalArgumentException: Unsupported sort property: ${p} → clean 400 response`;
+  else if(dir!=='asc'&&dir!=='desc') err=`Sort.Direction.fromString("${d}") throws: only asc / desc`;
+  else if(!['id','name','age','admissionDate'].includes(p)) err=`PropertyReferenceException: No property '${p}' found for type 'Student' → leaks a 500`;
+  if(err){ $('#so-t').innerHTML=''; $('#so-msg').innerHTML='<span class="bad">'+esc(err)+'</span>'+(al?'':'<span class="real">Without the allowlist, any client string reaches Spring Data.</span>'); return; }
+  const k={id:0,name:1,age:2,admissionDate:3}[p]; const sg=dir==='desc'?-1:1;
+  const rows=[...SO].sort((a,b)=>{ const c=a[k]<b[k]?-1:a[k]>b[k]?1:0; return c*sg || (tie? a[0]-b[0] : 0); });
+  $('#so-t').innerHTML=`<caption>ORDER BY ${p} ${dir.toUpperCase()}${tie?', id ASC':''}</caption><tr><th>id</th><th>name</th><th>age</th><th>admissionDate</th></tr>`+rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('');
+  const dup = new Set(SO.map(r=>r[k])).size < SO.length;
+  $('#so-msg').innerHTML = dup && !tie ? '<span class="bad">Ties exist</span> (two rows share the same '+esc(p)+'). Their order isn\'t guaranteed and can flip between page requests. Tick the tie-breaker.' : 'Deterministic order.'; }
+['so-p','so-d','so-tie','so-allow'].forEach(i=>$('#'+i).oninput=so); so();
+
+/* pagination */
+function pg(){ const T=Math.max(0,+$('#pg-t').value||0), P=+$('#pg-p').value, S=+$('#pg-s').value, M=+$('#pg-m').value||100;
+  if(!(P>=0)){ $('#pg-sql').textContent='—'; $('#pg-meta').textContent='—'; $('#pg-msg').innerHTML='<span class="bad">PageRequest.of() needs page ≥ 0.</span>'; return; }
+  if(!(S>0)){ $('#pg-sql').textContent='—'; $('#pg-meta').textContent='—'; $('#pg-msg').innerHTML='<span class="bad">PageRequest.of() needs size &gt; 0.</span>'; return; }
+  const size=Math.min(S,M), off=P*size, pages=Math.ceil(T/size), n=Math.max(0,Math.min(size,T-off));
+  $('#pg-sql').textContent=`Pageable pageable = PageRequest.of(${P}, ${size}, Sort.by("name").ascending());\n\n-- content query (syntax is database-dependent)\nSELECT * FROM students\nORDER BY name ASC\nLIMIT ${size} OFFSET ${off};   -- offset = ${P} × ${size}\n\n-- count query\nSELECT COUNT(*) FROM students;`;
+  $('#pg-meta').textContent=`page.getNumber()          = ${P}\npage.getSize()            = ${size}\npage.getNumberOfElements()= ${n}\npage.getTotalElements()   = ${T}\npage.getTotalPages()      = ${pages}\npage.isFirst()            = ${P===0}\npage.isLast()             = ${P>=pages-1}\npage.hasNext()            = ${P<pages-1}\npage.hasPrevious()        = ${P>0}`;
+  $('#pg-msg').innerHTML = (S>M?`<span class="bad">Client asked for ${S}; capped at ${M}.</span> `:'') + (n===0 && T>0 ? 'Past the end: empty content.' : `Rows ${off+1}–${off+n} of ${T}.`) + (n>0 && n<size?' The last page is shorter.':''); }
+['pg-t','pg-p','pg-s','pg-m'].forEach(i=>$('#'+i).oninput=pg); pg();
+
+/* page vs slice */
+function sl(page){ $('#sl-p').classList.toggle('on',page); $('#sl-s').classList.toggle('on',!page); const l=logger($('#sl-log')); l.clear();
+  if(page){ l.add('s','select … from students where active = true order by name limit 10 offset 20'); l.add('s','select count(*) from students where active = true'); l.add('i','2 queries'); }
+  else { l.add('s','select … from students where active = true order by name limit 11 offset 20'); l.add('i','asks for size + 1 rows; if the 11th exists, hasNext = true'); l.add('i','1 query, no count'); }
+  $('#sl-api').textContent = 'getContent()  getNumber()  getSize()\ngetNumberOfElements()\nisFirst()  isLast()  hasNext()  hasPrevious()' + (page?'\n+ getTotalElements()\n+ getTotalPages()':'\n✗ no totals'); }
+$('#sl-p').onclick=()=>sl(true); $('#sl-s').onclick=()=>sl(false); sl(true);
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-properties.min.js"></script>

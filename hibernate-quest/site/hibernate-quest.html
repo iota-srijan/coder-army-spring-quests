@@ -1,0 +1,1887 @@
+<title>Hibernate Quest</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<style>
+/* Layout: a dark course app. Sticky XP bar on top; lesson list | lesson text | challenge + editor. Deliberately dark-only. */
+:root{
+  --bg:#0A0D18; --panel:#111628; --panel2:#171D35; --edge:#262E4E; --ink:#E7EBF7; --muted:#8C95B4; --dim:#5D6585;
+  --gold:#F4C14B; --violet:#8B7BFF; --green:#3DDB96; --red:#FF5C7A; --cyan:#4CC9F0; --orange:#FF9F43;
+  --violet-s:#221F4A; --green-s:#0F2E25; --red-s:#3A1525; --gold-s:#3A2E10; --cyan-s:#0E2B38;
+  --f-display:'Chakra Petch','Segoe UI',system-ui,sans-serif;
+  --f-body:'Atkinson Hyperlegible','Segoe UI',system-ui,sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6;margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--panel)}
+a{color:var(--cyan)}
+code,kbd{font-family:var(--f-mono);font-size:.86em}
+:not(pre)>code{background:var(--panel2);border:1px solid var(--edge);padding:.05em .35em;border-radius:5px;color:var(--ink)}
+button,select,input,textarea{font:inherit;color:var(--ink)}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--panel);border-bottom:1px solid var(--edge);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px}
+.top-in{display:flex;align-items:center;gap:14px;flex-wrap:wrap;max-width:1800px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.25rem;letter-spacing:.02em;display:flex;align-items:center;gap:8px}
+.brand i{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--violet);color:var(--bg);font-style:normal;font-size:.95rem}
+.lvl{display:flex;align-items:center;gap:10px;flex:1;min-width:220px;max-width:460px}
+.lvl .badge{font-family:var(--f-display);font-weight:700;background:var(--gold-s);color:var(--gold);border:1px solid var(--gold);border-radius:8px;padding:2px 9px;white-space:nowrap}
+.xpbar{flex:1;height:10px;border-radius:6px;background:var(--panel2);border:1px solid var(--edge);overflow:hidden}
+.xpbar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--orange));transition:width .5s}
+.xptext{font-family:var(--f-mono);font-size:.78rem;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.stat{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);white-space:nowrap}
+.stat b{color:var(--ink)}
+.tbtn{background:var(--panel2);border:1px solid var(--edge);border-radius:8px;padding:6px 11px;cursor:pointer;font-size:.85rem}
+.tbtn:hover{border-color:var(--muted)}
+#menu-btn{display:none}
+
+/* app grid */
+.app{display:grid;grid-template-columns:240px minmax(0,.85fr) minmax(0,1.45fr);gap:0;max-width:1800px;margin:0 auto;min-height:calc(100vh - 60px)}
+.side{border-right:1px solid var(--edge);padding:16px 12px 40px;padding-left:max(12px,env(safe-area-inset-left,0px));display:grid;gap:18px;align-content:start;position:sticky;top:60px;max-height:calc(100vh - 60px);overflow:auto}
+.chap h3{font-family:var(--f-display);font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 8px 6px;display:flex;justify-content:space-between}
+.chap ol{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.li{width:100%;display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:8px;align-items:center;text-align:left;background:none;border:1px solid transparent;border-radius:9px;padding:6px 8px;cursor:pointer;font-size:.9rem;color:var(--ink)}
+.li:hover{background:var(--panel2)}
+.li.cur{background:var(--violet-s);border-color:var(--violet)}
+.li.locked{color:var(--dim);cursor:not-allowed}
+.li .dot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-mono);font-size:.68rem;font-weight:700;border:2px solid var(--edge);color:var(--muted)}
+.li.done .dot{background:var(--green);border-color:var(--green);color:var(--bg)}
+.li.cur .dot{border-color:var(--violet);color:var(--violet)}
+.li .k{font-family:var(--f-mono);font-size:.62rem;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.li.boss .dot{border-radius:6px;border-color:var(--red);color:var(--red)}
+.side-foot{display:grid;gap:8px;font-size:.82rem;color:var(--muted);padding-inline:6px}
+.side-foot label{display:flex;gap:8px;align-items:center;cursor:pointer}
+
+.lesson{padding:24px 28px 60px;border-right:1px solid var(--edge);min-width:0}
+.lesson .crumb{font-family:var(--f-mono);font-size:.74rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.lesson h1{font-family:var(--f-display);font-size:clamp(1.6rem,3vw,2.2rem);line-height:1.15;margin:.2em 0 .6em;text-wrap:balance}
+.lesson .body{display:grid;gap:14px;max-width:68ch}
+.lesson .body p{margin:0}
+.lesson .body h4{font-family:var(--f-display);font-size:1.05rem;margin:.6em 0 0;color:var(--gold)}
+.lesson .body ul,.lesson .body ol{margin:0;padding-left:1.25em;display:grid;gap:4px}
+.lesson pre,.cpre{background:var(--panel);border:1px solid var(--edge);border-radius:10px;padding:12px 14px;overflow-x:auto;margin:0;font-family:var(--f-mono);font-size:.8rem;line-height:1.6}
+.lesson .ana{border-left:3px solid var(--cyan);background:var(--cyan-s);padding:10px 14px;border-radius:0 10px 10px 0}
+.lesson .warn{border-left:3px solid var(--red);background:var(--red-s);padding:10px 14px;border-radius:0 10px 10px 0}
+.lesson .map{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;background:var(--panel);border:1px solid var(--edge);border-radius:10px;padding:12px 14px;margin:0}
+.lesson .map dt{font-weight:700}
+.lesson .map dd{margin:0;color:var(--muted)}
+.lesson .deep{font-size:.88rem;color:var(--muted)}
+.tc{color:#7E88A8} .tk{color:#C3A6FF} .ts{color:#8BE0B0}
+
+.chal{padding:20px 22px 60px;min-width:0;display:grid;gap:14px;align-content:start;grid-auto-rows:max-content;position:sticky;top:60px;max-height:calc(100vh - 60px);overflow:auto;padding-right:max(22px,env(safe-area-inset-right,0px))}
+.chal-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.kind{font-family:var(--f-display);font-weight:700;font-size:.78rem;letter-spacing:.12em;padding:3px 10px;border-radius:6px;border:1px solid}
+.kind.quiz{color:var(--cyan);border-color:var(--cyan);background:var(--cyan-s)}
+.kind.sql{color:var(--orange);border-color:var(--orange);background:var(--gold-s)}
+.kind.java,.kind.js{color:var(--violet);border-color:var(--violet);background:var(--violet-s)}
+.kind.attack{color:var(--red);border-color:var(--red);background:var(--red-s)}
+.kind.local{color:var(--green);border-color:var(--green);background:var(--green-s)}
+.kind.boss{color:var(--bg);border-color:var(--red);background:var(--red)}
+.reward{font-family:var(--f-mono);font-size:.8rem;color:var(--gold)}
+.donechip{font-family:var(--f-mono);font-size:.78rem;color:var(--green)}
+.task{background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:12px 14px;display:grid;gap:8px}
+.task b.t{font-family:var(--f-display);font-size:1.02rem}
+.task ul{margin:0;padding-left:1.2em;display:grid;gap:3px;color:var(--muted);font-size:.92rem}
+
+/* editor */
+.ed{display:grid;grid-template-columns:auto minmax(0,1fr);background:#070A13;border:1px solid var(--edge);border-radius:12px;overflow:hidden}
+.ed .file{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;font-family:var(--f-mono);font-size:.74rem;color:var(--muted);background:var(--panel);border-bottom:1px solid var(--edge);padding:6px 12px}
+.gut{margin:0;padding:12px 8px 12px 12px;text-align:right;color:var(--dim);font-family:var(--f-mono);font-size:.98rem;line-height:1.65;user-select:none;overflow:hidden;background:#070A13}
+.ed textarea{border:none;outline:none;resize:vertical;background:transparent;color:var(--ink);font-family:var(--f-mono);font-size:.98rem;line-height:1.65;padding:12px 12px 12px 4px;min-height:max(440px,58vh);white-space:pre;overflow:auto;tab-size:4;caret-color:var(--gold)}
+.ed textarea:focus-visible{outline:none}
+.ed:focus-within{border-color:var(--violet)}
+.ed .edit-tip{color:var(--gold);font-weight:700;letter-spacing:.02em}
+.ed.fresh{border:2px solid var(--gold);box-shadow:0 0 0 4px var(--gold-s);animation:nudge 1.6s ease-in-out 3}
+.ed textarea{cursor:text}
+@keyframes nudge{50%{box-shadow:0 0 0 8px var(--gold-s)}}
+.ed-tools{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+body.focus .side,body.focus .lesson{display:none}
+body.focus .app{grid-template-columns:minmax(0,1fr)}
+body.focus .chal{grid-column:1;position:static;max-height:none;padding-left:max(24px,env(safe-area-inset-left,0px))}
+body.focus .ed textarea{min-height:68vh}
+.con{font-size:.86rem}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{border-radius:10px;padding:9px 16px;cursor:pointer;font-weight:700;border:1px solid var(--edge);background:var(--panel2);display:inline-flex;gap:6px;align-items:center}
+.btn:hover{border-color:var(--muted)}
+.btn.go{background:var(--violet);border-color:var(--violet);color:#0A0D18}
+.btn.go:hover{filter:brightness(1.1)}
+.btn.ok{background:var(--green);border-color:var(--green);color:#0A0D18}
+.btn.ghost{background:none}
+.btn:disabled{opacity:.4;cursor:default}
+.hintk{font-family:var(--f-mono);font-size:.72rem;color:var(--dim)}
+
+/* console */
+.con{background:#070A13;border:1px solid var(--edge);border-radius:12px;font-family:var(--f-mono);font-size:.8rem;line-height:1.55;overflow:auto;max-height:340px}
+.con .ch{display:flex;justify-content:space-between;padding:6px 12px;border-bottom:1px solid var(--edge);color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;position:sticky;top:0;background:#070A13}
+.con .cb{padding:10px 12px;display:grid;gap:4px}
+.con .pass{color:var(--green)} .con .fail{color:var(--red)} .con .info{color:var(--muted)} .con .out{color:var(--ink)}
+.con .hint{color:var(--gold);padding-left:2ch}
+.con table{border-collapse:collapse;margin:4px 0 8px}
+.con th,.con td{border:1px solid var(--edge);padding:3px 9px;text-align:left;white-space:nowrap}
+.con th{color:var(--cyan);font-weight:600}
+.con td.null{color:var(--dim);font-style:italic}
+.banner{border-radius:12px;padding:12px 14px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;font-weight:700}
+.banner.win{background:var(--green-s);border:1px solid var(--green);color:var(--green)}
+.banner.lose{background:var(--red-s);border:1px solid var(--red);color:var(--red)}
+
+/* quiz */
+.qz{display:grid;gap:14px}
+.qq{background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:12px 14px;display:grid;gap:8px}
+.qq .qt{font-weight:700}
+.opt{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;align-items:start;text-align:left;background:var(--panel2);border:1.5px solid var(--edge);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:.93rem}
+.opt:hover{border-color:var(--muted)}
+.opt .l{font-family:var(--f-mono);font-weight:700;color:var(--muted)}
+.opt.sel{border-color:var(--violet);background:var(--violet-s)}
+.opt.right{border-color:var(--green);background:var(--green-s)}
+.opt.wrong{border-color:var(--red);background:var(--red-s)}
+.qq .ex{font-size:.88rem;color:var(--muted)}
+
+/* attack */
+.atk{display:grid;gap:10px}
+.atk input{width:100%;font-family:var(--f-mono);background:#070A13;border:1px solid var(--edge);border-radius:10px;padding:10px 12px}
+.glued{font-family:var(--f-mono);font-size:.84rem;background:#070A13;border:1px solid var(--edge);border-radius:10px;padding:10px 12px;white-space:pre-wrap;word-break:break-word}
+.glued .u{background:var(--red);color:#0A0D18;border-radius:3px}
+
+/* local */
+.steps{margin:0;padding-left:1.3em;display:grid;gap:8px}
+.check{display:flex;gap:10px;align-items:flex-start;background:var(--panel);border:1px solid var(--edge);border-radius:10px;padding:10px 12px;cursor:pointer}
+.check input{margin-top:4px;accent-color:var(--green)}
+
+.toast{position:fixed;right:max(20px,env(safe-area-inset-right,0px));bottom:max(20px,env(safe-area-inset-bottom,0px));z-index:40;background:var(--gold);color:#0A0D18;font-family:var(--f-display);font-weight:700;font-size:1.3rem;padding:10px 18px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.5);animation:rise 1.8s ease forwards}
+@keyframes rise{0%{transform:translateY(20px);opacity:0}15%{transform:none;opacity:1}80%{opacity:1}100%{transform:translateY(-20px);opacity:0}}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.85rem;color:var(--gold)}
+
+@media (max-width:1180px){
+  .app{grid-template-columns:240px minmax(0,1fr)}
+  .chal{grid-column:2;position:static;max-height:none;border-top:1px solid var(--edge);padding-left:28px}
+  .lesson{border-right:none}
+}
+@media (max-width:820px){
+  #menu-btn{display:inline-block}
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{display:none;position:static;max-height:none;border-right:none;border-bottom:1px solid var(--edge);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .side.open{display:grid}
+  .lesson,.chal{grid-column:1;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .lvl{order:3;max-width:none;min-width:100%}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<header class="top">
+  <div class="top-in">
+    <button class="tbtn" id="menu-btn" type="button" aria-expanded="false">☰ Lessons</button>
+    <div class="brand"><i>{}</i><span id="brand-name">Course</span></div>
+    <div class="lvl"><span class="badge" id="lv">Lv 1</span><div class="xpbar"><i id="xpfill" style="width:0%"></i></div><span class="xptext" id="xptext">0 / 100 XP</span></div>
+    <span class="stat">done <b id="donecount">0</b>/<b id="total">0</b></span>
+  </div>
+</header>
+
+<div class="app">
+  <nav class="side" id="side" aria-label="Lessons"></nav>
+  <main class="lesson" id="lesson"></main>
+  <aside class="chal" id="chal" aria-label="Challenge"></aside>
+</div>
+<script>
+/* ================= COURSE DATA (replace everything in this block) ================= */
+const CONFIG = {
+  title: 'Hibernate Quest',
+  storageKey: 'hibernate-quest-v1',
+  labs: [
+    { name: '1 · Hibernate intro', url: 'hibernate-intro.html' },
+    { name: '2 · Internals', url: 'hibernate-internals.html' },
+    { name: '3 · Relationships', url: 'jpa-relationships.html' },
+    { name: '4 · Cascade & N+1', url: 'jpa-fetching.html' },
+    { name: '5 · Spring Data JPA', url: 'spring-data-jpa.html' }
+  ],
+  localProject: 'hibernate-quest/practice',
+};
+const LAB1 = CONFIG.labs[0].url, L2 = CONFIG.labs[1].url, L3 = CONFIG.labs[2].url, L4 = CONFIG.labs[3].url, L5 = CONFIG.labs[4].url;
+const deep = (url, id, text) => `<p class="deep">Deep dive: <a href="${url}#${id}" target="_blank" rel="noopener">${text}</a></p>`;
+
+const SEED = `CREATE TABLE departments (id INTEGER PRIMARY KEY, name TEXT NOT NULL, active INTEGER NOT NULL);
+INSERT INTO departments VALUES (10,'Engineering',1),(20,'HR',1),(30,'Design',0);
+CREATE TABLE students (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  age INTEGER,
+  active INTEGER NOT NULL DEFAULT 1,
+  department_id INTEGER REFERENCES departments(id)
+);
+INSERT INTO students(name,email,age,active,department_id) VALUES
+  ('Rahul','rahul@gmail.com',24,1,10),('Priya','priya@gmail.com',22,1,10),('Aman','aman@gmail.com',27,0,20),
+  ('Neha','neha@gmail.com',21,1,30),('Harsh','harsh@gmail.com',23,1,NULL),('Kabir','kabir@gmail.com',26,1,20),
+  ('Isha','isha@gmail.com',25,0,10);
+CREATE TABLE student_skills (student_id INTEGER NOT NULL, skill TEXT NOT NULL);
+INSERT INTO student_skills VALUES (1,'Java'),(1,'SQL'),(2,'Spring'),(1,'Spring'),(6,'Java');
+CREATE TABLE courses (id INTEGER PRIMARY KEY, title TEXT NOT NULL);
+INSERT INTO courses VALUES (101,'Java'),(102,'Spring'),(103,'SQL');
+CREATE TABLE student_course (student_id INTEGER NOT NULL, course_id INTEGER NOT NULL, UNIQUE(student_id, course_id));
+INSERT INTO student_course VALUES (1,101),(1,102),(2,101),(2,103),(6,102);
+CREATE TABLE accounts (id INTEGER PRIMARY KEY, balance INTEGER NOT NULL);
+INSERT INTO accounts VALUES (1,1000),(2,500);`;
+
+const has = re => c => re.test(c);
+const not = re => c => !re.test(c);
+const sqlVar = c => (c.match(/String sql ?= ?("(?:[^"\\]|\\.)*"(?: ?\+ ?[^;]+)?);/) || [])[1] || '';
+const ann = (c, re) => (c.match(re) || [])[1] || '';
+// @AttributeOverride(name = "field", column = @Column(name = "col")) inside a code segment
+const ovr = (seg, f, col) => new RegExp(`@AttributeOverride\\(name ?= ?"${f}", ?column ?= ?@Column\\(name ?= ?"${col}"\\)\\)`).test(seg);
+const ADDR = [['addressLine','address_line'],['city','city'],['state','state'],['postalCode','postal_code']];
+const mergeVar = c => (c.match(/Student (\w+) ?= ?entityManager\.merge\(detached\);/) || [])[1];
+
+const COURSE = [
+/* ===================================================== CHAPTER 1 */
+{ id:'c1', title:'Chapter 1 · Meet Hibernate', lessons:[
+
+{ id:'1-1', title:'Why an ORM at all?', kind:'quiz', xp:10,
+  body:`<div class="ana">You speak Hindi, the shopkeeper speaks Tamil. Looking up every word yourself, every time, is Spring JDBC. Handing a translator a dictionary <i>once</i> is an ORM.</div>
+<p>Java has classes, objects, references and collections. A database has tables, rows, columns, keys and joins. Same data, different shape: the <b>object-relational impedance mismatch</b>.</p>
+<p>With Spring JDBC you still write each SQL string, bind values in <code>?</code> order (a wrong order compiles fine) and copy each column back with a RowMapper. An <b>ORM</b> lets you declare the mapping once (<code>@Entity</code>, <code>@Column</code>) and reuses it everywhere.</p>
+<p><b>JPA</b> (now <i>Jakarta Persistence</i>) is the specification: interfaces and annotations in <code>jakarta.persistence</code>. <b>Hibernate</b> is the provider that implements it and runs above JDBC. Like <code>List</code> and <code>ArrayList</code>.</p>
+${deep(LAB1,'mismatch','break the parameter order yourself')}`,
+  qs:[
+    {q:'What does Spring JDBC still make you do by hand?', o:['Open and close connections','Write SQL, bind values in order, map rows to objects','Manage the connection pool','Nothing; it maps objects automatically'], a:1, ex:'JdbcTemplate removed the plumbing, not the translation.'},
+    {q:'<code>jakarta.persistence.EntityManager</code> is…', o:['Hibernate\'s own class','A JPA interface; the runtime object is Hibernate\'s','Part of Spring JDBC','A MySQL driver class'], a:1, ex:'Interface from the spec, implementation from the provider.'},
+    {q:'Where does Hibernate sit?', o:['Instead of JDBC','Above JDBC, which talks to the driver and database','Inside MySQL','Between the browser and the controller'], a:1, ex:'Application → Hibernate → JDBC → driver → database.'},
+    {q:'Which is <b>not</b> an ORM responsibility from the notes?', o:['SQL generation','Result-set mapping','Relationship management','Rendering HTML views'], a:3, ex:'ORM: mapping metadata, SQL generation, binding, result mapping, relationships, caching, transactions.'}]},
+
+{ id:'1-2', title:'Be the ORM: the INSERT', kind:'quiz', xp:15,
+  body:`<p>Before trusting Hibernate, do its job once. When you call <code>entityManager.persist(new Student("Zoya", "zoya@gmail.com", 20))</code>, Hibernate reads the mapping and sends an INSERT, binding values from the fields. <code>id</code> is left out because <code>GenerationType.IDENTITY</code> lets the database fill it.</p>
+<pre>INSERT INTO students(name, email, age) VALUES (?, ?, ?)</pre>
+<p>With the real values bound, the database receives:</p>
+<pre>INSERT INTO students(name, email, age) VALUES ('Zoya', 'zoya@gmail.com', 20);</pre>`,
+  qs:[
+    {q:'Which statement does Hibernate send for <code>persist(new Student("Zoya", "zoya@gmail.com", 20))</code>?', o:['<code>UPDATE students SET name = ?, email = ?, age = ?</code>','<code>INSERT INTO students(name, email, age) VALUES (?, ?, ?)</code>','<code>INSERT INTO students(id, name, email, age) VALUES (?, ?, ?, ?)</code>','<code>SELECT * FROM students</code>'], a:1, ex:'A new object means an INSERT. The id is not part of it.'},
+    {q:'Why is <code>id</code> missing from the INSERT?', o:['ids are optional in SQL','<code>GenerationType.IDENTITY</code> lets the database generate it','Hibernate adds it later with an UPDATE','it is a mistake in the mapping'], a:1, ex:'IDENTITY means the database (AUTO_INCREMENT) fills the id.'},
+    {q:'Where do the values for the three <code>?</code> come from?', o:['application.properties','the database','the fields of the object you persist','a hidden table'], a:2, ex:'Hibernate reads name, email and age from the object and binds them.'},
+    {q:'The table already holds students with ids 1 to 7. What id does Zoya get?', o:['7','20','1','8'], a:3, ex:'The database continues the sequence: 8.'}]},
+
+{ id:'1-3', title:'Your first entity', kind:'java', xp:25, file:'Student.java',
+  body:`<p><code>@Entity</code> makes instances of a class <i>eligible</i> for persistence. <code>@Table(name = "students")</code> names the table. <code>@Id</code> marks the primary key and <code>@GeneratedValue(strategy = GenerationType.IDENTITY)</code> says MySQL's AUTO_INCREMENT fills it.</p>
+<p>JPA creates objects when it loads rows, so it needs a <b>no-arg constructor</b>; <code>protected</code> keeps your code from using it by accident.</p>
+<pre><span class="tk">@Entity</span>
+<span class="tk">@Table</span>(name = <span class="ts">"students"</span>)
+<span class="tk">public class</span> Student { <span class="tk">@Id</span> ... }</pre>
+${deep(LAB1,'crud','first entity and CRUD, step by step')}`,
+  task:{t:'Map Student to the students table', items:['<code>@Entity</code> + <code>@Table(name = "students")</code> on the class.','<code>id</code> is the key, generated by IDENTITY.','Add a no-arg constructor.']},
+  starter:`package com.coderarmy.hibernate.entity;
+
+import jakarta.persistence.*;
+
+// TODO: make this class an entity mapped to the "students" table
+public class Student {
+
+    // TODO: primary key, generated by MySQL AUTO_INCREMENT
+    private Long id;
+
+    private String name;
+    private String email;
+    private Integer age;
+
+    // TODO: JPA needs a no-arg constructor (protected is fine)
+
+    public Student(String name, String email, Integer age) {
+        this.name = name;
+        this.email = email;
+        this.age = age;
+    }
+}`,
+  tests:[
+    {n:'@Entity on the class', t:has(/@Entity\b/), h:'Put @Entity above public class Student.'},
+    {n:'Mapped to table "students"', t:has(/@Table\(name ?= ?"students"\)/), h:'@Table(name = "students")'},
+    {n:'@Id on the id field', t:has(/@Id ?(?:@GeneratedValue\([^)]*\) ?)?private Long id;|@GeneratedValue\([^)]*\) ?@Id ?private Long id;/), h:'@Id goes directly above private Long id;'},
+    {n:'IDENTITY generation', t:has(/@GeneratedValue\(strategy ?= ?GenerationType\.IDENTITY\)/), h:'@GeneratedValue(strategy = GenerationType.IDENTITY)'},
+    {n:'No-arg constructor', t:has(/(protected|public) Student\(\) ?\{ ?\}/), h:'protected Student() { }'},
+    {n:'Uses jakarta, not javax', t:not(/javax\.persistence/), h:'Spring Boot 3 uses jakarta.persistence.'}],
+  out:['Hibernate: create table students (id bigint not null auto_increment, age integer, email varchar(255), name varchar(255), primary key (id))'],
+  solution:`package com.coderarmy.hibernate.entity;
+
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "students")
+public class Student {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+    private String email;
+    private Integer age;
+
+    protected Student() {
+    }
+
+    public Student(String name, String email, Integer age) {
+        this.name = name;
+        this.email = email;
+        this.age = age;
+    }
+}`},
+
+{ id:'1-4', title:'Wire it up: application.properties', kind:'java', lang:'properties', xp:20, file:'application.properties',
+  body:`<p>Add <code>spring-boot-starter-data-jpa</code> and the MySQL driver, create the database (<code>CREATE DATABASE student_db;</code>), then point Boot at it. Boot builds a <code>DataSource</code> from <code>spring.datasource.*</code>, and Hibernate gets its JDBC connections from it.</p>
+<p>For learning: <code>ddl-auto=update</code> lets Hibernate adjust the schema, <code>show-sql</code> prints every statement and <code>format_sql</code> makes it readable.</p>
+<div class="warn"><code>create</code> drops and recreates the schema on startup. Existing data is lost.</div>
+${deep(LAB1,'setup','ddl-auto simulator')}`,
+  task:{t:'Configure Hibernate for learning', items:['URL <code>jdbc:mysql://localhost:3306/student_db</code>','<code>ddl-auto</code> = update','Show SQL and format it.']},
+  starter:`spring.datasource.url=
+spring.datasource.username=root
+spring.datasource.password=your_password
+
+# TODO: let Hibernate update the schema (learning only)
+# TODO: print the SQL, and format it
+`,
+  tests:[
+    {n:'MySQL URL for student_db', t:has(/spring\.datasource\.url ?= ?jdbc:mysql:\/\/localhost:3306\/student_db\b/), h:'spring.datasource.url=jdbc:mysql://localhost:3306/student_db'},
+    {n:'ddl-auto = update', t:has(/spring\.jpa\.hibernate\.ddl-auto ?= ?update\b/), h:'spring.jpa.hibernate.ddl-auto=update'},
+    {n:'Not a data-destroying mode', t:not(/ddl-auto ?= ?(create|create-drop)\b/), h:'create / create-drop wipe tables. Use update while learning.'},
+    {n:'SQL printed', t:has(/spring\.jpa\.show-sql ?= ?true/), h:'spring.jpa.show-sql=true'},
+    {n:'SQL formatted', t:has(/spring\.jpa\.properties\.hibernate\.format_sql ?= ?true/), h:'spring.jpa.properties.hibernate.format_sql=true'}],
+  solution:`spring.datasource.url=jdbc:mysql://localhost:3306/student_db
+spring.datasource.username=root
+spring.datasource.password=your_password
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true`},
+
+{ id:'1-5', title:'Predict ddl-auto', kind:'quiz', xp:15,
+  body:`<dl class="map"><dt>none</dt><dd>no schema action</dd><dt>validate</dt><dd>check the schema matches; never change it</dd><dt>update</dt><dd>try to change the schema to match; keeps rows</dd><dt>create</dt><dd>drop + recreate at startup</dd><dt>create-drop</dt><dd>create at startup, drop when the factory closes</dd></dl>
+<p>Production teams use <b>Flyway</b> or <b>Liquibase</b> migrations instead of <code>update</code>.</p>`,
+  qs:[
+    {q:'Table has 3 rows. App restarts with <code>create</code>. Rows afterwards?', o:['3','0','6','Startup fails'], a:1, ex:'create drops and recreates the schema.'},
+    {q:'You add a <code>phone</code> field. <code>validate</code> is set. What happens at startup?', o:['Column is added','Validation fails: missing column','Nothing, phone is ignored','Table is recreated'], a:1, ex:'validate only checks; it never alters.'},
+    {q:'Which mode drops the schema when the app stops?', o:['update','create','create-drop','none'], a:2, ex:'Created at startup, dropped when the persistence factory closes.'},
+    {q:'Right tool for production schema changes?', o:['ddl-auto=update','Flyway / Liquibase migrations','ddl-auto=create','Editing tables by hand at night'], a:1, ex:'update is for demos and early development.'}]},
+
+{ id:'1-6', title:'Shape the columns (and fix a teammate\'s enum)', kind:'java', xp:30, file:'Student.java',
+  body:`<p><code>@Column</code> controls the column: <code>name</code>, <code>nullable</code>, <code>unique</code>, <code>length</code> (used in schema generation), <code>insertable</code>/<code>updatable</code> (whether it appears in INSERT/UPDATE).</p>
+<p>For exact decimals use <code>BigDecimal</code> with <code>precision</code> (all digits) and <code>scale</code> (after the point): 98.75 is precision 4, scale 2. <code>@Transient</code> fields aren't stored at all.</p>
+<div class="warn">A teammate used <code>EnumType.ORDINAL</code>. That stores 0, 1, 2. Add a constant at the top of the enum and every old row changes meaning. The notes store the name: <code>EnumType.STRING</code>.</div>
+${deep(LAB1,'column','@Column builder and the enum toggle')}`,
+  task:{t:'Finish the mapping', items:['name → column <code>student_name</code>, NOT NULL, length 100','email → NOT NULL, unique, length 150','percentage → 5 digits, 2 after the point','status stored as text','displayName never stored']},
+  starter:`@Entity
+@Table(name = "students")
+public class Student {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    // TODO: column "student_name", NOT NULL, length 100
+    private String name;
+
+    // TODO: NOT NULL, unique, length 150
+    private String email;
+
+    // TODO: exactly 5 digits, 2 after the point
+    private BigDecimal percentage;
+
+    @Enumerated(EnumType.ORDINAL)
+    private StudentStatus status;
+
+    // TODO: never stored in the database
+    private String displayName;
+}`,
+  tests:[
+    {n:'name → student_name, NOT NULL, 100', t:c => { const a = ann(c, /@Column\(([^)]*)\) ?private String name;/); return /name ?= ?"student_name"/.test(a) && /nullable ?= ?false/.test(a) && /length ?= ?100\b/.test(a); }, h:'@Column(name = "student_name", nullable = false, length = 100) directly above name.'},
+    {n:'email NOT NULL, unique, 150', t:c => { const a = ann(c, /@Column\(([^)]*)\) ?private String email;/); return /nullable ?= ?false/.test(a) && /unique ?= ?true/.test(a) && /length ?= ?150\b/.test(a); }, h:'@Column(nullable = false, unique = true, length = 150)'},
+    {n:'percentage precision 5, scale 2', t:c => { const a = ann(c, /@Column\(([^)]*)\) ?private BigDecimal percentage;/); return /precision ?= ?5\b/.test(a) && /scale ?= ?2\b/.test(a); }, h:'@Column(precision = 5, scale = 2)'},
+    {n:'status stored by name', t:has(/@Enumerated\((?:value ?= ?)?EnumType\.STRING\) ?private StudentStatus status;/), h:'@Enumerated(EnumType.STRING)'},
+    {n:'No ORDINAL left', t:not(/EnumType\.ORDINAL/), h:'ORDINAL breaks when constants are reordered or inserted.'},
+    {n:'displayName not persisted', t:has(/@Transient ?private String displayName;/), h:'@Transient above displayName.'}],
+  solution:`@Entity
+@Table(name = "students")
+public class Student {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "student_name", nullable = false, length = 100)
+    private String name;
+
+    @Column(nullable = false, unique = true, length = 150)
+    private String email;
+
+    @Column(precision = 5, scale = 2)
+    private BigDecimal percentage;
+
+    @Enumerated(EnumType.STRING)
+    private StudentStatus status;
+
+    @Transient
+    private String displayName;
+}`},
+
+{ id:'1-7', title:'The Y/N converter', kind:'quiz', xp:15,
+  body:`<p>The database stores <code>'Y'</code> / <code>'N'</code>, Java wants a <code>Boolean</code>. An <code>AttributeConverter&lt;Boolean, String&gt;</code> has two halves: <code>convertToDatabaseColumn</code> and <code>convertToEntityAttribute</code>, used with <code>@Convert(converter = BooleanToYesNoConverter.class)</code>.</p>
+<pre>@Converter
+public class BooleanToYesNoConverter implements AttributeConverter&lt;Boolean, String&gt; {
+
+    public String convertToDatabaseColumn(Boolean value) {
+        if (value == null) return null;
+        return value ? "Y" : "N";
+    }
+
+    public Boolean convertToEntityAttribute(String value) {
+        if (value == null) return null;
+        return "Y".equals(value);      // only an exact "Y" means true
+    }
+}</pre>
+${deep(LAB1,'convert','try the converter both ways')}`,
+  qs:[
+    {q:'<code>convertToDatabaseColumn(true)</code> returns…', o:['"Y"','"N"','"true"','null'], a:0, ex:'true is stored as "Y".'},
+    {q:'<code>convertToEntityAttribute("y")</code> (lower case) returns…', o:['true','false','null','it throws'], a:1, ex:'Only an exact "Y" means true, so "y" gives false.'},
+    {q:'<code>convertToDatabaseColumn(null)</code> returns…', o:['"N"','"Y"','null','it throws'], a:2, ex:'Null must stay null in both directions.'},
+    {q:'Which line attaches the converter to a field?', o:['<code>@Transient</code>','<code>@Enumerated(EnumType.STRING)</code>','<code>@Convert(converter = BooleanToYesNoConverter.class)</code>','<code>@Id</code>'], a:2, ex:'@Convert on the field names the converter class.'},
+    {q:'Which is the safe check for "Y"?', o:['<code>value.equals("Y")</code>','<code>"Y".equals(value)</code>','<code>value == "Y"</code>','<code>value.isEmpty()</code>'], a:1, ex:'"Y".equals(value) does not crash when value is null, and compares the text. == compares references.'}]},
+
+{ id:'1-8', title:'Two addresses, one set of columns', kind:'java', xp:30, file:'Student.java',
+  body:`<div class="ana">An address has no identity of its own; it belongs to the student. That makes it a <b>value type</b>: <code>@Embeddable</code> class, used with <code>@Embedded</code>, flattened into the student row.</div>
+<p><code>Address</code> has <code>addressLine</code>, <code>city</code>, <code>state</code>, <code>postalCode</code> → columns <code>address_line</code>, <code>city</code>, <code>state</code>, <code>postal_code</code>.</p>
+<div class="warn">This entity embeds Address <b>twice</b>, so both want the same four columns. The app fails at startup with a repeated column mapping.</div>
+<p>Fix it with <code>@AttributeOverride(name = "city", column = @Column(name = "current_city"))</code> for every field. <code>name</code> is the <b>Java field</b>, not the old column. Wrap several in <code>@AttributeOverrides({ … })</code>.</p>
+${deep(LAB1,'embed','watch the columns collide')}`,
+  task:{t:'Rename the embedded columns', items:['currentAddress → current_address_line, current_city, current_state, current_postal_code','permanentAddress → permanent_…','Keep currentAddress declared first.']},
+  starter:`@Entity
+@Table(name = "students")
+public class Student {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    // TODO: override the four columns for the current address
+    @Embedded
+    private Address currentAddress;
+
+    // TODO: and for the permanent address
+    @Embedded
+    private Address permanentAddress;
+}`,
+  tests:[
+    {n:'currentAddress: all four renamed', t:c => { const seg = c.split('private Address currentAddress;')[0]; return c.includes('private Address currentAddress;') && ADDR.every(([f, col]) => ovr(seg, f, 'current_' + col)); }, h:'Above currentAddress: @AttributeOverride(name = "addressLine", column = @Column(name = "current_address_line")) and the same for city, state, postalCode.'},
+    {n:'permanentAddress: all four renamed', t:c => { const parts = c.split('private Address currentAddress;'); const seg = (parts[1] || '').split('private Address permanentAddress;')[0]; return ADDR.every(([f, col]) => ovr(seg, f, 'permanent_' + col)); }, h:'Between the two fields: overrides with permanent_address_line, permanent_city, permanent_state, permanent_postal_code.'},
+    {n:'name = Java field names', t:not(/@AttributeOverride\(name ?= ?"(address_line|postal_code)"/), h:'name is the field (addressLine, postalCode), not the column.'},
+    {n:'Both are still @Embedded', t:c => (c.match(/@Embedded\b/g) || []).length >= 2, h:'Keep @Embedded on both fields.'}],
+  solution:`@Entity
+@Table(name = "students")
+public class Student {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "addressLine", column = @Column(name = "current_address_line")),
+        @AttributeOverride(name = "city", column = @Column(name = "current_city")),
+        @AttributeOverride(name = "state", column = @Column(name = "current_state")),
+        @AttributeOverride(name = "postalCode", column = @Column(name = "current_postal_code"))
+    })
+    private Address currentAddress;
+
+    @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "addressLine", column = @Column(name = "permanent_address_line")),
+        @AttributeOverride(name = "city", column = @Column(name = "permanent_city")),
+        @AttributeOverride(name = "state", column = @Column(name = "permanent_state")),
+        @AttributeOverride(name = "postalCode", column = @Column(name = "permanent_postal_code"))
+    })
+    private Address permanentAddress;
+}`},
+
+{ id:'1-9', title:'A set of skills needs its own table', kind:'java', xp:25, file:'Student.java',
+  body:`<p>A <code>Set&lt;String&gt;</code> can't fit in one column. <code>@ElementCollection</code> stores it in a separate <b>collection table</b>; <code>@CollectionTable</code> names it and its join column; <code>@Column</code> names the value column.</p>
+<p>Those rows aren't entities: there's no <code>find(Skill.class, id)</code>. Each value belongs to its student. The same works for a collection of embeddables like <code>PhoneNumber</code>.</p>
+${deep(LAB1,'elemcoll','add skills and watch the table')}`,
+  task:{t:'Map skills to student_skills', items:['Table <code>student_skills</code>, join column <code>student_id</code>','Value column <code>skill</code>','Values, not entities: no @OneToMany']},
+  starter:`@Entity
+@Table(name = "students")
+public class Student {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    // TODO: store these in table student_skills (student_id, skill)
+    private Set<String> skills = new HashSet<>();
+}`,
+  tests:[
+    {n:'@ElementCollection', t:has(/@ElementCollection\b/), h:'A collection of basic values → @ElementCollection.'},
+    {n:'Table student_skills with student_id', t:c => /@CollectionTable\(/.test(c) && /name ?= ?"student_skills"/.test(c) && /joinColumns ?= ?@JoinColumn\(name ?= ?"student_id"\)/.test(c), h:'@CollectionTable(name = "student_skills", joinColumns = @JoinColumn(name = "student_id"))'},
+    {n:'Value column skill', t:has(/@Column\(name ?= ?"skill"\)/), h:'@Column(name = "skill")'},
+    {n:'Not an entity relationship', t:not(/@OneToMany|@ManyToMany/), h:'Strings aren\'t entities; no @OneToMany.'},
+    {n:'Field still initialised', t:has(/private Set<String> skills ?= ?new HashSet<>\(\);/), h:'Keep = new HashSet<>();'}],
+  solution:`@Entity
+@Table(name = "students")
+public class Student {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ElementCollection
+    @CollectionTable(name = "student_skills", joinColumns = @JoinColumn(name = "student_id"))
+    @Column(name = "skill")
+    private Set<String> skills = new HashSet<>();
+}`},
+
+{ id:'1-10', title:'Read the collection table', kind:'quiz', xp:15,
+  body:`<p>When you call <code>rahul.getSkills()</code>, Hibernate reads <code>student_skills</code> rows whose <code>student_id</code> is Rahul's id. This is the query behind it:</p>
+<pre>student_skills(student_id, skill)</pre>
+<pre>SELECT k.skill
+FROM students s
+JOIN student_skills k ON k.student_id = s.id
+WHERE s.name = 'Rahul'
+ORDER BY k.skill;</pre>`,
+  qs:[
+    {q:'<code>rahul.getSkills()</code> makes Hibernate read…', o:['one big column in the students table','rows of <code>student_skills</code> whose <code>student_id</code> is Rahul\'s id','a separate table for each skill','a file on disk'], a:1, ex:'One row per skill, linked to the student by student_id.'},
+    {q:'Which condition links a skill row to its student?', o:['<code>ON k.skill = s.name</code>','<code>ON k.id = s.skill</code>','<code>ON k.student_id = s.id</code>','<code>ON s.id = k.skill</code>'], a:2, ex:'student_id is the foreign key that points at students.id.'},
+    {q:'What does <code>ORDER BY k.skill</code> do?', o:['sorts the skills alphabetically','removes duplicates','limits the result to one skill','filters only Rahul'], a:0, ex:'It only sorts. The WHERE clause picks Rahul.'},
+    {q:'A <code>Set&lt;String&gt; skills</code> marked <code>@ElementCollection</code> is stored as…', o:['comma-separated text in one column','JSON inside the students table','a separate table with one row per skill','it cannot be stored'], a:2, ex:'Collections get their own table.'}]},
+
+{ id:'1-local', title:'Local quest: map Student for real', kind:'local', xp:60,
+  body:`<p>Open <code>hibernate-quest/practice</code> in IntelliJ (it's a Maven project). The tests run real Hibernate 7 against an in-memory H2 database, so no MySQL needed. They check behaviour: the real columns, the SQL count, what reaches the database.</p><p>Your Java compiles and runs for real here. No hidden solution in the project: ask Claude to review your code if you're stuck.</p>`,
+  local:{steps:[
+    'Open <code>entity/Student.java</code>. Every TODO is tagged Q1a–Q1e.',
+    'Q1a: <code>@Column</code> on name (student_name, NOT NULL, 100) and email (NOT NULL, unique, 150).',
+    'Q1b: fix the teammate\'s <code>EnumType.ORDINAL</code>.',
+    'Q1c–Q1e: <code>@Transient</code> displayName, <code>@ElementCollection</code> skills, permanentAddress with <code>@AttributeOverrides</code>.',
+    'Run <code>Q1MappingTest</code> until it\'s green. Do Q1e carefully: embedding twice without overrides breaks startup for every test.'],
+    cmd:'mvn test -Dtest=Q1MappingTest', expectLine:'Tests run: 8, Failures: 0, Errors: 0, Skipped: 0',
+    confirm:'All 8 Q1MappingTest tests pass on my machine'}},
+
+{ id:'1-boss', title:'Boss: Mapping Master', kind:'boss', xp:60,
+  body:`<p>Five questions, all must be right. No hints until you win.</p>`,
+  qs:[
+    {q:'An @Embedded Address is stored…', o:['in an address table with its own id','as extra columns in the owner\'s row','in a collection table','not at all'], a:1, ex:'Flattened into the owning row.'},
+    {q:'A Set&lt;PhoneNumber&gt; of @Embeddable values is stored…', o:['as JSON in one column','in a collection table via @ElementCollection','as extra columns','in a separate entity table'], a:1, ex:'@ElementCollection + @CollectionTable.'},
+    {q:'<code>@Column(precision = 6, scale = 3)</code> fits…', o:['123.456','1234.56','12.3456','123456'], a:0, ex:'6 digits total, 3 after the point.'},
+    {q:'Department shared by many students, queried on its own. Model it as…', o:['@Embeddable','@Transient','an entity','@ElementCollection'], a:2, ex:'Independent identity and lifecycle → entity.'},
+    {q:'In <code>@AttributeOverride(name = …)</code>, name is…', o:['the new column','the old column','the Java field in the embeddable','the table'], a:2, ex:'e.g. name = "postalCode".'}]}
+]},
+
+/* ===================================================== CHAPTER 2 */
+{ id:'c2', title:'Chapter 2 · Inside Hibernate', lessons:[
+
+{ id:'2-1', title:'Factory, manager, context', kind:'quiz', xp:10,
+  body:`<div class="ana">A carpenter's <b>workbench</b>: pieces are brought from the warehouse, photographed, worked on, and at the end only changed pieces go back. The bench is the <b>persistence context</b>; the carpenter's hands are the <code>EntityManager</code>.</div>
+<p><code>EntityManagerFactory</code>: expensive, app-wide, holds metadata. <code>EntityManager</code>: short-lived, one unit of work, <b>not thread-safe</b>. Persistence context: tracks managed entities, usually per transaction. Hibernate's native names: <code>SessionFactory</code> and <code>Session</code> (they extend the JPA ones).</p>
+<p>Repositories are singletons, so Spring injects a <b>shared proxy</b> via <code>@PersistenceContext</code> that routes each call to the current transaction's EntityManager.</p>
+${deep(L2,'proxy','two requests, one repository')}`,
+  qs:[
+    {q:'Which lives for the whole application?', o:['EntityManager','Persistence context','EntityManagerFactory','A transaction'], a:2, ex:'Expensive to create; shared.'},
+    {q:'Why does @PersistenceContext inject a proxy?', o:['To make it faster','The real EntityManager isn\'t thread-safe; the proxy routes per transaction','Proxies are required by MySQL','To disable caching'], a:1, ex:'Request A → EM A, Request B → EM B.'},
+    {q:'Hibernate\'s native equivalent of EntityManager?', o:['SessionFactory','Session','Transaction','DataSource'], a:1, ex:'Session extends EntityManager.'},
+    {q:'find() and the context: on a miss Hibernate…', o:['throws','SELECTs, builds the object, stores it, manages it','returns null always','creates a new row'], a:1, ex:'Key is (entity type, id).'}]},
+
+{ id:'2-2', title:'Count the SELECTs', kind:'quiz', xp:15,
+  body:`<p>The first-level cache lives inside the persistence context. Count how many SQL statements Hibernate runs for a list of operations.</p>
+<dl class="map"><dt><code>"find 1"</code></dt><dd>cache hit → no SQL; miss → 1 SELECT, then cached</dd><dt><code>"detach 1"</code></dt><dd>remove only entity 1 from the context</dd><dt><code>"clear"</code></dt><dd>empty the context</dd><dt><code>"newtx"</code></dt><dd>new transaction = new, empty context</dd><dt><code>"query"</code></dt><dd>a JPQL query: <b>always</b> 1 SQL (doesn't change the cache here)</dd></dl>
+<pre>find 1, find 1          → 1 SQL  (second find is a cache hit)
+find 1, find 2, find 1  → 2 SQL</pre>
+${deep(L2,'cache','click through the cache simulator')}`,
+  qs:[
+    {q:'<code>find 1, find 1</code> → how many SQL statements?', o:['0','1','2','3'], a:1, ex:'The first find misses (1 SELECT). The second is a cache hit.'},
+    {q:'<code>find 1, clear, find 1</code> →', o:['1','3','2','0'], a:2, ex:'clear empties the context, so the second find misses again.'},
+    {q:'<code>find 1, find 2, detach 1, find 1, find 2</code> →', o:['2','3','4','5'], a:1, ex:'find 1 (1), find 2 (2), detach 1, find 1 misses (3), find 2 is still cached.'},
+    {q:'<code>find 1, query, find 1</code> →', o:['1','2','3','4'], a:1, ex:'find 1 (1), the query always runs (2), the second find is a cache hit.'},
+    {q:'<code>find 1, newtx, find 1</code> →', o:['1','3','2','0'], a:2, ex:'A new transaction starts with an empty context, so the second find misses.'}]},
+
+{ id:'2-3', title:'Dirty checking', kind:'quiz', xp:15,
+  body:`<p>At flush, Hibernate compares each managed entity with the <b>snapshot</b> it took when loading. If a field differs, it sends an UPDATE for the changed fields. If nothing changed (setting the same value counts as no change), it sends nothing.</p>
+<pre>snapshot: {id:1, name:'Rahul', age:24}
+current:  {id:1, name:'Rohan', age:24}
+→ UPDATE students SET name = ? WHERE id = ?</pre>
+<p>Changed fields are listed in the snapshot's order, <code>id</code> is skipped. (Hibernate by default may list every column; here we list only what changed.)</p>
+${deep(L2,'dirty','snapshot vs current, live')}`,
+  qs:[
+    {q:'At flush, what does Hibernate compare?', o:['two different entities with each other','each managed entity with the snapshot taken when it was loaded','the entity with its Java class','the entity with the next transaction'], a:1, ex:'Snapshot vs current state is dirty checking.'},
+    {q:'You call <code>setName("Rahul")</code> on a student already named Rahul. The flush sends…', o:['an UPDATE of name','no UPDATE: nothing changed','an INSERT','an exception'], a:1, ex:'Same value, no change, no SQL.'},
+    {q:'Name and age changed, email did not. Which UPDATE lists only what changed?', o:['<code>UPDATE students SET name = ?, email = ?, age = ? WHERE id = ?</code>','<code>UPDATE students SET name = ? WHERE id = ?</code>','<code>UPDATE students SET name = ?, age = ? WHERE id = ?</code>','<code>UPDATE students SET age = ? WHERE id = ?</code>'], a:2, ex:'Only the changed fields, in snapshot order.'},
+    {q:'Do you need to call save() or update() on a loaded, managed entity to store a changed field?', o:['Yes: nothing is saved without it','Yes: call merge() on it first','No: changing the field inside a transaction is enough','No: but you must call flush() yourself'], a:2, ex:'Dirty checking writes the UPDATE at flush. JPA does not even have an update() method.'}]},
+
+{ id:'2-4', title:'Name the state', kind:'quiz', xp:15,
+  body:`<dl class="map"><dt>Transient</dt><dd><code>new Student()</code>: not tracked, no row</dd><dt>Managed</dt><dd>after <code>persist()</code> or <code>find()</code>; tracked (SQL may not have run yet)</dd><dt>Detached</dt><dd>after <code>detach()</code>, <code>clear()</code> or the context ending; changes ignored</dd><dt>Removed</dt><dd>after <code>remove()</code>; DELETE at flush</dd></dl>
+${deep(L2,'lifecycle','drive the lifecycle machine')}`,
+  qs:[
+    {q:'<code>Student s = new Student("Rahul", …);</code> s is…', o:['managed','transient','detached','removed'], a:1, ex:'@Entity only makes it eligible.'},
+    {q:'After <code>@Transactional</code> method returns, the entity it loaded is…', o:['managed forever','detached','removed','transient'], a:1, ex:'Transaction-scoped context ended.'},
+    {q:'<code>entityManager.contains(s)</code> after <code>detach(s)</code>?', o:['true','false','throws','null'], a:1, ex:'No longer managed.'},
+    {q:'<code>remove(s)</code> means the DELETE…', o:['runs on that exact line','is scheduled and sent at flush','never runs','runs at next app start'], a:1, ex:'remove is a lifecycle transition.'},
+    {q:'detach(s) vs remove(s): which deletes the row?', o:['detach','remove','both','neither'], a:1, ex:'detach only stops tracking.'}]},
+
+{ id:'2-5', title:'Stop calling merge "to be safe"', kind:'java', xp:30, file:'StudentService.java',
+  body:`<p>A loaded entity is <b>managed</b>. Change a field and, before commit, dirty checking sends the UPDATE. No <code>update()</code>, no <code>merge()</code>, no manual <code>flush()</code>. JPA doesn't even have <code>EntityManager.update()</code>.</p>
+<p>But that only works inside a transaction. Put <code>@Transactional</code> on the service method (the business operation), and <code>@Transactional(readOnly = true)</code> on pure reads.</p>
+<div class="warn">This service has no transaction and piles on merge and flush. Clean it up.</div>
+${deep(L2,'aop','why transactions belong in the service')}`,
+  task:{t:'Let dirty checking do its job', items:['updateStudent is transactional.','getStudent is a read-only transaction.','No merge, flush, save or update calls.','Keep the not-found check and the setter.']},
+  starter:`@Service
+public class StudentService {
+    private final StudentPersistenceRepository repository;
+    private final EntityManager entityManager;
+    // constructor omitted
+
+    public void updateStudent(Long id, String newName) {
+        Student student = repository.findById(id);
+        if (student == null) {
+            throw new IllegalArgumentException("Student not found: " + id);
+        }
+        student.setName(newName);
+        entityManager.merge(student);   // "to be safe"
+        entityManager.flush();          // "to be really safe"
+    }
+
+    public Student getStudent(Long id) {
+        return repository.findById(id);
+    }
+}`,
+  tests:[
+    {n:'updateStudent is @Transactional', t:has(/@Transactional(?:\(\))? ?public void updateStudent/), h:'Put @Transactional on updateStudent.'},
+    {n:'getStudent is read-only', t:has(/@Transactional\(readOnly ?= ?true\) ?public Student getStudent/), h:'@Transactional(readOnly = true) on getStudent.'},
+    {n:'No merge()', t:not(/\.merge\(/), h:'The entity is already managed. merge is for detached state.'},
+    {n:'No manual flush()', t:not(/\.flush\(/), h:'Spring flushes before commit.'},
+    {n:'No save()/update()', t:not(/\.(save|update)\(/), h:'Dirty checking generates the UPDATE.'},
+    {n:'Still sets the name', t:has(/student\.setName\(newName\);/), h:'Keep student.setName(newName);'},
+    {n:'Still rejects unknown ids', t:has(/throw new IllegalArgumentException/), h:'Keep the not-found check.'}],
+  out:['Hibernate: select s.id, s.age, s.email, s.name from students s where s.id=?','Hibernate: update students set age=?, email=?, name=? where id=?','(commit)'],
+  solution:`@Service
+public class StudentService {
+    private final StudentPersistenceRepository repository;
+    private final EntityManager entityManager;
+    // constructor omitted
+
+    @Transactional
+    public void updateStudent(Long id, String newName) {
+        Student student = repository.findById(id);
+        if (student == null) {
+            throw new IllegalArgumentException("Student not found: " + id);
+        }
+        student.setName(newName);
+    }
+
+    @Transactional(readOnly = true)
+    public Student getStudent(Long id) {
+        return repository.findById(id);
+    }
+}`},
+
+{ id:'2-6', title:'merge() returns a different object', kind:'java', xp:25, file:'StudentService.java',
+  body:`<p><code>merge(detached)</code> copies the detached object's state into a <b>managed</b> instance and returns it. The argument stays detached. Changes to it afterwards are not tracked.</p>
+<pre>Student managed = entityManager.merge(detached);   <span class="tc">// use this one</span></pre>
+<div class="warn">The code below changes the wrong object. The rename silently never saves.</div>
+${deep(L2,'gotcha','the merge gotcha')}`,
+  task:{t:'Make the rename stick', items:['Keep the result of merge in a variable.','Change and return the managed instance.','Don\'t touch <code>detached</code> after merging.']},
+  starter:`@Transactional
+public Student rename(Student detached, String newName) {
+    entityManager.merge(detached);
+    detached.setName(newName);
+    return detached;
+}`,
+  tests:[
+    {n:'Change reaches the managed instance', t:c => { const v = mergeVar(c); return (v && v !== 'detached' && new RegExp(v + '\\.setName\\(newName\\)').test(c)) || /detached\.setName\(newName\); ?return entityManager\.merge\(detached\);/.test(c); }, h:'Student managed = entityManager.merge(detached); managed.setName(newName);'},
+    {n:'Returns the managed instance', t:c => { const v = mergeVar(c); return (v && new RegExp('return ' + v + ';').test(c)) || /return entityManager\.merge\(detached\);/.test(c); }, h:'return managed;'},
+    {n:'Detached object not changed after merge', t:c => !/merge\(detached\)[\s\S]*detached\.setName/.test(c), h:'After merging, changes to detached are lost.'}],
+  solution:`@Transactional
+public Student rename(Student detached, String newName) {
+    Student managed = entityManager.merge(detached);
+    managed.setName(newName);
+    return managed;
+}`},
+
+{ id:'2-7', title:'Import 100,000 students', kind:'java', xp:30, file:'ImportService.java',
+  body:`<p>Persisting 100,000 entities in one loop keeps all of them managed: memory and dirty-checking work explode. Every 100 rows: <code>flush()</code> (send pending SQL; still managed) then <code>clear()</code> (detach everything).</p>
+<div class="warn">Order matters. <code>clear()</code> before <code>flush()</code> throws away changes that haven't been sent. And <code>i % 100 == 0</code> fires at i = 0, after just one student.</div>
+${deep(L2,'batch','run the batch simulator')}`,
+  task:{t:'Batch the import', items:['Every 100 students: flush, then clear.','Use <code>(i + 1) % 100 == 0</code>.']},
+  starter:`@Transactional
+public void importStudents(List<Student> students) {
+    for (int i = 0; i < students.size(); i++) {
+        entityManager.persist(students.get(i));
+        // TODO: every 100 students, send the pending SQL and empty the context
+    }
+}`,
+  tests:[
+    {n:'Still persists each student', t:has(/entityManager\.persist\(students\.get\(i\)\);/), h:'Keep entityManager.persist(students.get(i));'},
+    {n:'Every 100th student', t:has(/\(i ?\+ ?1\) ?% ?100 ?== ?0/), h:'if ((i + 1) % 100 == 0)'},
+    {n:'No off-by-one at i = 0', t:c => !/\bi ?% ?100 ?== ?0/.test(c.replace(/\(i ?\+ ?1\)/g, 'X')), h:'i % 100 == 0 fires after the very first student.'},
+    {n:'flush() then clear()', t:has(/entityManager\.flush\(\); ?entityManager\.clear\(\);/), h:'entityManager.flush(); entityManager.clear(); in that order.'},
+    {n:'Never clear before flush', t:not(/entityManager\.clear\(\); ?entityManager\.flush\(\);/), h:'clear first discards pending changes.'}],
+  out:['… 1,000 batches of 100 inserts …','peak managed entities: 100'],
+  solution:`@Transactional
+public void importStudents(List<Student> students) {
+    for (int i = 0; i < students.size(); i++) {
+        entityManager.persist(students.get(i));
+        if ((i + 1) % 100 == 0) {
+            entityManager.flush();
+            entityManager.clear();
+        }
+    }
+}`},
+
+{ id:'2-8', title:'All or nothing: the transfer', kind:'quiz', xp:15,
+  body:`<p>Two UPDATEs move ₹100 from account 1 to account 2. If the second failed alone, money would vanish. Wrap them in one <b>transaction</b>: <code>BEGIN</code> … <code>COMMIT</code>. This is what <code>@Transactional</code> does around your method.</p>
+<pre>BEGIN;
+UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+UPDATE accounts SET balance = balance + 100 WHERE id = 2;
+COMMIT;</pre>
+${deep(L2,'tx','toggle the failure and see rollback')}`,
+  qs:[
+    {q:'Why put both UPDATEs in one transaction?', o:['it makes the UPDATEs faster','both happen or neither does','it avoids writing SQL','it removes the need for account ids'], a:1, ex:'All or nothing keeps the total money correct.'},
+    {q:'What does <code>@Transactional</code> do around a method?', o:['copies the table before the method runs','makes the method run in a new thread','opens a transaction before the method and commits after it; an unchecked exception rolls it back','turns every field into a column'], a:2, ex:'Begin before, commit after, roll back on a runtime exception.'},
+    {q:'Account 1 had 1000 and account 2 had 500. After the transfer of 100 they hold…', o:['900 and 600','1100 and 400','900 and 500','1000 and 600'], a:0, ex:'One loses 100, the other gains 100, so the total stays 1500.'},
+    {q:'The second UPDATE fails after the first succeeded. Inside a transaction…', o:['account 1 stays debited and the money vanishes','the first UPDATE is rolled back, so no money vanishes','account 2 is credited anyway','the app freezes'], a:1, ex:'Rollback undoes the first UPDATE.'}]},
+
+{ id:'2-9', title:'Flush, commit, cache: predict', kind:'quiz', xp:15,
+  body:`<p><b>Flush</b> sends SQL inside the transaction (can still roll back). <b>Commit</b> finishes it. With <code>AUTO</code> flush mode Hibernate flushes before commit and before queries that pending changes could affect. Changes collect in the context first: <b>transactional write-behind</b>.</p>
+${deep(L2,'flush','step through flush vs commit')}`,
+  qs:[
+    {q:'UPDATE was flushed, then a RuntimeException is thrown. The row afterwards?', o:['Updated','Rolled back','Half updated','Deleted'], a:1, ex:'Flushed ≠ committed.'},
+    {q:'find(1) in methodA, find(1) in a separate @Transactional methodB. SELECTs?', o:['1','2','0','depends on MySQL'], a:1, ex:'Each transaction gets its own context.'},
+    {q:'find(1); setName("Rohan"); detach(student); method returns. SQL?', o:['SELECT + UPDATE','Just SELECT','Just UPDATE','Nothing'], a:1, ex:'Detached changes aren\'t dirty-checked.'},
+    {q:'setName("Rahul") when it\'s already "Rahul". UPDATE?', o:['Yes, always','Normally no','Only with flush()','Only in MySQL'], a:1, ex:'No actual state change.'},
+    {q:'By default Spring rolls back for…', o:['every exception','unchecked exceptions (RuntimeException, Error)','checked exceptions only','nothing'], a:1, ex:'Use rollbackFor for checked ones.'}]},
+
+{ id:'2-local', title:'Local quest: dirty checking, merge, batches', kind:'local', xp:60,
+  body:`<p>Open <code>hibernate-quest/practice</code> in IntelliJ (it's a Maven project). The tests run real Hibernate 7 against an in-memory H2 database, so no MySQL needed. They check behaviour: the real columns, the SQL count, what reaches the database.</p><p>Your Java compiles and runs for real here. No hidden solution in the project: ask Claude to review your code if you're stuck.</p>`,
+  local:{steps:[
+    'Open <code>service/StudentService.java</code>.',
+    'Q2a <code>rename()</code>: the test counts statements, exactly 1 SELECT + 1 UPDATE. No save(), no merge().',
+    'Q2b <code>renameDetached()</code>: use what <code>merge()</code> returns.',
+    'Q2c <code>importStudents()</code>: flush + clear every 100. The tests count managed entities after 1 and after 100 students.',
+    'The tests don\'t run inside a transaction, so a missing <code>@Transactional</code> shows.'],
+    cmd:'mvn test -Dtest=Q2InternalsTest', expectLine:'Tests run: 9, Failures: 0, Errors: 0, Skipped: 0',
+    confirm:'All 9 Q2InternalsTest tests pass on my machine'}},
+
+{ id:'2-boss', title:'Boss: Workbench Warden', kind:'boss', xp:70,
+  body:`<p>All five right to win.</p>`,
+  qs:[
+    {q:'controller → service.helper() → this.update() where only update() is @Transactional. Transaction?', o:['Yes','No: self-invocation bypasses the proxy','Only for reads','Yes, but read-only'], a:1, ex:'The proxy is skipped.'},
+    {q:'A JPQL "select s from Student s" with Student#1 already managed…', o:['is skipped entirely','still runs SQL but returns the managed instance for row 1','throws','replaces the managed instance'], a:1, ex:'Queries run; identity is preserved.'},
+    {q:'Another process changed row 1. Your managed copy…', o:['updates itself','stays stale until refresh()','is detached','is removed'], a:1, ex:'refresh() reloads; discards unsynced changes.'},
+    {q:'Within one context, <code>find(Student,1) == find(Student,1)</code>?', o:['true','false','random','compile error'], a:0, ex:'Identity map.'},
+    {q:'Best place for the transaction around enroll + payment?', o:['Each repository method','The service method for the use case','The controller','The entity'], a:1, ex:'The business operation is the boundary.'}]}
+]},
+
+/* ===================================================== CHAPTER 3 */
+{ id:'c3', title:'Chapter 3 · Relationships', lessons:[
+
+{ id:'3-1', title:'How many to how many?', kind:'quiz', xp:10,
+  body:`<div class="ana">Each student wears an <b>ID card</b> with a department number. The department's wall roster is a convenience copy. Officially, the cards decide. Cards = foreign key on the <b>owning side</b>; roster = <b>inverse side</b>.</div>
+<p>Cardinality: <code>@OneToOne</code>, <code>@OneToMany</code>, <code>@ManyToOne</code>, <code>@ManyToMany</code>. One-to-many and many-to-one are two views of the <i>same</i> foreign key. Uni/bidirectional is only about Java navigation.</p>
+${deep(L3,'cardinality','cardinality game')}`,
+  qs:[
+    {q:'<code>Order.customer</code> (many orders, one customer) is…', o:['@OneToOne','@OneToMany','@ManyToOne','@ManyToMany'], a:2, ex:'Many → one.'},
+    {q:'A bidirectional Student ↔ Department has how many foreign keys?', o:['0','1','2','one per student'], a:1, ex:'students.department_id.'},
+    {q:'Unidirectional / bidirectional describes…', o:['SQL join direction','Java navigation','Index direction','Transaction order'], a:1, ex:'Which classes have a field to the other.'},
+    {q:'Students and Courses need…', o:['a FK on students','a FK on courses','a join table','an embeddable'], a:2, ex:'Many-to-many → join table.'}]},
+
+{ id:'3-2', title:'student.getDepartment().getName() in SQL', kind:'quiz', xp:15,
+  body:`<p>In Java you follow a reference. In SQL the same thing is a join on the foreign key: <code>students.department_id → departments.id</code>. This is the SQL Hibernate runs behind <code>student.getDepartment().getName()</code>:</p>
+<pre>SELECT s.name, d.name AS department
+FROM students s
+JOIN departments d ON d.id = s.department_id
+ORDER BY s.id;</pre>
+<p>Read it as: for each student, find the department row whose <code>id</code> matches the student's <code>department_id</code>.</p>`,
+  qs:[
+    {q:'Which condition follows the foreign key from a student to their department?', o:['<code>ON d.id = s.department_id</code>','<code>ON s.id = d.id</code>','<code>ON s.name = d.name</code>','<code>ON s.department_id = s.id</code>'], a:0, ex:'The FK column (students.department_id) is compared with the primary key it points to (departments.id).'},
+    {q:'A student has <code>department_id = NULL</code>. With a plain <code>JOIN</code>, that student…', o:['appears with an empty department','is left out of the result','makes the query fail','appears twice'], a:1, ex:'A plain (inner) JOIN keeps only rows that have a match.'},
+    {q:'Which join keeps students that have no department?', o:['<code>INNER JOIN</code>','<code>LEFT JOIN</code> starting from students','<code>CROSS JOIN</code>','<code>JOIN</code> plus <code>WHERE department_id IS NULL</code>'], a:1, ex:'LEFT JOIN from students keeps every student. The department columns are NULL where there is no match.'},
+    {q:'In JPA, "following the foreign key" in Java looks like…', o:['writing the SQL join yourself','reading a <code>Long departmentId</code>','following the reference: <code>student.getDepartment()</code>','it is not possible'], a:2, ex:'Hibernate turns the reference navigation into the join or select for you.'}]},
+
+{ id:'3-3', title:'@ManyToOne instead of a Long', kind:'java', xp:25, file:'Student.java',
+  body:`<p>Without ORM you'd keep <code>private Long departmentId;</code>. With JPA, keep a real reference and say how it's stored:</p>
+<pre><span class="tk">@ManyToOne</span>
+<span class="tk">@JoinColumn</span>(name = <span class="ts">"department_id"</span>)
+<span class="tk">private</span> Department department;</pre>
+<p>Required at both layers: <code>optional = false</code> on <code>@ManyToOne</code> (object model) and <code>nullable = false</code> on <code>@JoinColumn</code> (schema NOT NULL).</p>
+${deep(L3,'m2o','insert behaviour simulator')}`,
+  task:{t:'Replace departmentId with a relationship', items:['Field type <code>Department</code>.','Join column <code>department_id</code>.','Required in the object model and the schema.']},
+  starter:`@Entity
+@Table(name = "students")
+public class Student {
+    @Id @GeneratedValue
+    private Long id;
+    private String name;
+
+    // TODO: many students → one department, column department_id, required
+    private Long departmentId;
+}`,
+  tests:[
+    {n:'A Department reference', t:has(/private Department department;/), h:'private Department department;'},
+    {n:'No raw departmentId', t:not(/Long departmentId/), h:'Remove the Long field.'},
+    {n:'@ManyToOne(optional = false)', t:has(/@ManyToOne\([^)]*optional ?= ?false/), h:'@ManyToOne(optional = false)'},
+    {n:'@JoinColumn department_id, NOT NULL', t:c => { const a = ann(c, /@JoinColumn\(([^)]*)\)/); return /name ?= ?"department_id"/.test(a) && /nullable ?= ?false/.test(a); }, h:'@JoinColumn(name = "department_id", nullable = false)'},
+    {n:'Right cardinality', t:not(/@(OneToOne|OneToMany|ManyToMany)/), h:'Many students, one department → @ManyToOne.'}],
+  solution:`@Entity
+@Table(name = "students")
+public class Student {
+    @Id @GeneratedValue
+    private Long id;
+    private String name;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "department_id", nullable = false)
+    private Department department;
+}`},
+
+{ id:'3-4', title:'The inverse side and its helpers', kind:'java', xp:30, file:'Department.java',
+  body:`<p><code>@OneToMany(mappedBy = "department")</code> is the inverse view of the FK owned by <code>Student.department</code>. <code>mappedBy</code> names the <b>Java field</b>, never the column. The inverse side has no <code>@JoinColumn</code>.</p>
+<p>The two Java fields don't sync themselves. Helper methods update <i>both</i>, so the owning side (which decides the FK) is always set.</p>
+<div class="warn">Someone wrote <code>mappedBy = "department_id"</code>. Hibernate fails at startup: no such property on Student.</div>
+${deep(L3,'owning','owning vs inverse experiment')}`,
+  task:{t:'Fix mappedBy and finish the helpers', items:['<code>mappedBy</code> → the field name.','addStudent: add to the list <b>and</b> set the student\'s department.','removeStudent: remove <b>and</b> set it to null.']},
+  starter:`@Entity
+@Table(name = "departments")
+public class Department {
+    @Id @GeneratedValue
+    private Long id;
+    private String name;
+
+    @OneToMany(mappedBy = "department_id")
+    private List<Student> students = new ArrayList<>();
+
+    public void addStudent(Student student) {
+        students.add(student);
+        // TODO
+    }
+
+    public void removeStudent(Student student) {
+        // TODO
+    }
+}`,
+  tests:[
+    {n:'mappedBy = "department"', t:has(/@OneToMany\([^)]*mappedBy ?= ?"department"(?=[,)])/), h:'mappedBy = "department" (Student\'s field).'},
+    {n:'Not the column name', t:not(/mappedBy ?= ?"department_id"/), h:'mappedBy never names a column.'},
+    {n:'No @JoinColumn on the inverse side', t:not(/@JoinColumn/), h:'Student.department owns the join column.'},
+    {n:'addStudent sets both sides', t:c => { const m = c.match(/void addStudent\(Student (\w+)\) ?\{([^}]*)\}/); return !!m && new RegExp(`students\\.add\\(${m[1]}\\)`).test(m[2]) && new RegExp(`${m[1]}\\.setDepartment\\(this\\)`).test(m[2]); }, h:'students.add(student); student.setDepartment(this);'},
+    {n:'removeStudent clears both sides', t:c => { const m = c.match(/void removeStudent\(Student (\w+)\) ?\{([^}]*)\}/); return !!m && new RegExp(`students\\.remove\\(${m[1]}\\)`).test(m[2]) && new RegExp(`${m[1]}\\.setDepartment\\(null\\)`).test(m[2]); }, h:'students.remove(student); student.setDepartment(null);'}],
+  solution:`@Entity
+@Table(name = "departments")
+public class Department {
+    @Id @GeneratedValue
+    private Long id;
+    private String name;
+
+    @OneToMany(mappedBy = "department")
+    private List<Student> students = new ArrayList<>();
+
+    public void addStudent(Student student) {
+        students.add(student);
+        student.setDepartment(this);
+    }
+
+    public void removeStudent(Student student) {
+        students.remove(student);
+        student.setDepartment(null);
+    }
+}`},
+
+{ id:'3-5', title:'What the owning side writes', kind:'quiz', xp:15,
+  body:`<p>Harsh (id 5) has no department. Calling <code>engineering.addStudent(harsh)</code> sets <code>harsh.department</code>, the owning side, so at flush relationship dirty checking sends one UPDATE:</p>
+<pre>UPDATE students SET department_id = 10 WHERE id = 5;</pre>
+<p>(Engineering has id 10.) Only <code>engineering.getStudents().add(harsh)</code> would send <b>nothing</b>.</p>`,
+  qs:[
+    {q:'After <code>engineering.addStudent(harsh)</code> and a flush, Hibernate sends…', o:['<code>UPDATE students SET department_id = 10 WHERE id = 5</code>','<code>INSERT INTO departments …</code>','nothing','<code>DELETE FROM students WHERE id = 5</code>'], a:0, ex:'addStudent sets the owning side (harsh.department), so the FK column changes.'},
+    {q:'You only call <code>engineering.getStudents().add(harsh)</code>, then flush. The SQL sent is…', o:['an UPDATE of department_id','an INSERT into students','nothing for the foreign key','an error'], a:2, ex:'The inverse side (mappedBy) is never used to write the foreign key.'},
+    {q:'Which side decides the value of <code>students.department_id</code>?', o:['the inverse side (Department.students)','the owning side (Student.department)','whichever was saved first','both equally'], a:1, ex:'The owning side holds the join column, so it writes the FK.'},
+    {q:'How many rows does the UPDATE change?', o:['all students','every student in Engineering','only Harsh\'s row','none'], a:2, ex:'The WHERE id = 5 limits it to one row.'}]},
+
+{ id:'3-6', title:'One user, at most one profile', kind:'java', xp:30, file:'Profile.java',
+  body:`<p>A plain foreign key allows repeats: that's many-to-one. One-to-one = <b>foreign key + unique constraint</b>. Profile holds the join column, so it's the owning side; <code>User.profile</code> is the inverse with <code>mappedBy = "user"</code>.</p>
+<p>Mandatory: <code>@OneToOne(optional = false)</code> plus <code>nullable = false</code>. (Alternative: shared primary key with <code>@MapsId</code>.)</p>
+${deep(L3,'o2o','insert extra profiles and watch unique stop them')}`,
+  task:{t:'Map Profile ↔ User', items:['Profile.user: column <code>user_id</code>, unique, required.','User.profile: inverse side.']},
+  starter:`@Entity
+public class Profile {
+    @Id @GeneratedValue
+    private Long id;
+    private String bio;
+
+    // TODO: owning side. Column user_id, required, at most one profile per user
+    private User user;
+}
+
+@Entity
+public class User {
+    @Id @GeneratedValue
+    private Long id;
+    private String username;
+
+    // TODO: inverse side
+    private Profile profile;
+}`,
+  tests:[
+    {n:'@OneToOne(optional = false) on Profile.user', t:has(/@OneToOne\(optional ?= ?false\) ?(?:@JoinColumn\([^)]*\) ?)?private User user;|@JoinColumn\([^)]*\) ?@OneToOne\(optional ?= ?false\) ?private User user;/), h:'@OneToOne(optional = false) above private User user;'},
+    {n:'user_id, unique, NOT NULL', t:c => { const a = ann(c, /@JoinColumn\(([^)]*)\)/); return /name ?= ?"user_id"/.test(a) && /unique ?= ?true/.test(a) && /nullable ?= ?false/.test(a); }, h:'@JoinColumn(name = "user_id", nullable = false, unique = true)'},
+    {n:'User.profile is the inverse side', t:has(/@OneToOne\(mappedBy ?= ?"user"\) ?private Profile profile;/), h:'@OneToOne(mappedBy = "user") above private Profile profile;'},
+    {n:'Only one join column', t:c => (c.match(/@JoinColumn/g) || []).length === 1, h:'The inverse side has no @JoinColumn.'}],
+  solution:`@Entity
+public class Profile {
+    @Id @GeneratedValue
+    private Long id;
+    private String bio;
+
+    @OneToOne(optional = false)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    private User user;
+}
+
+@Entity
+public class User {
+    @Id @GeneratedValue
+    private Long id;
+    private String username;
+
+    @OneToOne(mappedBy = "user")
+    private Profile profile;
+}`},
+
+{ id:'3-7', title:'Enrol Priya in Spring', kind:'quiz', xp:15,
+  body:`<p>Many-to-many lives in a join table, one row per pair. <code>priya.addCourse(spring)</code> changes the owning collection, so Hibernate inserts one pair. The table has <code>UNIQUE(student_id, course_id)</code>.</p>
+<pre>student_course(student_id, course_id)</pre>
+<p>Priya is id 2 and Spring is id 102, so the SQL Hibernate sends is:</p>
+<pre>INSERT INTO student_course(student_id, course_id) VALUES (2, 102);</pre>`,
+  qs:[
+    {q:'<code>priya.addCourse(spring)</code> and a flush make Hibernate send…', o:['<code>INSERT INTO student_course(student_id, course_id) VALUES (2, 102)</code>','<code>UPDATE courses SET student_id = 2 WHERE id = 102</code>','<code>UPDATE students SET course_id = 102 WHERE id = 2</code>','<code>INSERT INTO courses …</code>'], a:0, ex:'A new pair row goes into the join table. No other table changes.'},
+    {q:'How many rows does the join table store for one enrolment?', o:['none, it is stored on students','one row per student–course pair','one row per student','one row per course'], a:1, ex:'One row = one student taking one course.'},
+    {q:'What does <code>UNIQUE(student_id, course_id)</code> prevent?', o:['a student taking two courses','a course having two students','enrolling the same student in the same course twice','deleting an enrolment'], a:2, ex:'The same pair can appear only once.'},
+    {q:'Why does the SQL touch only <code>student_course</code>?', o:['the foreign keys live in the join table, not in students or courses','students and courses are read-only','Hibernate cannot update those tables','it is a bug'], a:0, ex:'In many-to-many, neither entity table holds the link, the join table does.'}]},
+
+{ id:'3-8', title:'student.getCourses() in SQL', kind:'quiz', xp:15,
+  body:`<p>Navigating <code>rahul.getCourses()</code> walks students → student_course → courses: two joins through the join table.</p>
+<pre>SELECT c.title
+FROM students s
+JOIN student_course sc ON sc.student_id = s.id
+JOIN courses c ON c.id = sc.course_id
+WHERE s.name = 'Rahul'
+ORDER BY c.title;</pre>`,
+  qs:[
+    {q:'To list a student\'s courses you walk…', o:['students → courses directly','students → student_course → courses','courses → students only','student_course alone'], a:1, ex:'The join table sits between the two entity tables.'},
+    {q:'How many <code>JOIN</code>s does that query need?', o:['0','1','2','3'], a:2, ex:'One from students to the join table, one from the join table to courses.'},
+    {q:'Which condition connects the join table to the courses table?', o:['<code>ON c.id = sc.course_id</code>','<code>ON c.id = sc.student_id</code>','<code>ON s.id = c.id</code>','<code>ON sc.id = c.title</code>'], a:0, ex:'sc.course_id is the foreign key that points at courses.id.'},
+    {q:'Which condition connects students to the join table?', o:['<code>ON sc.student_id = s.id</code>','<code>ON sc.course_id = s.id</code>','<code>ON sc.id = s.name</code>','<code>ON s.id = c.id</code>'], a:0, ex:'sc.student_id is the foreign key that points at students.id.'}]},
+
+{ id:'3-9', title:'@ManyToMany with a join table', kind:'java', xp:30, file:'Student.java',
+  body:`<p>The side with <code>@JoinTable</code> owns the relationship. <code>joinColumns</code> point at the owner (<code>student_id</code>), <code>inverseJoinColumns</code> at the other entity (<code>course_id</code>). A unique constraint on the pair blocks duplicate enrolments. <code>Course.students</code> is the inverse side.</p>
+<div class="warn">No <code>CascadeType.REMOVE</code> here: courses are shared. Deleting one student must not delete Java for everyone.</div>
+${deep(L3,'m2m','click the enrolment grid')}`,
+  task:{t:'Map Student ↔ Course', items:['Join table <code>student_course</code>: student_id → owner, course_id → other.','Unique (student_id, course_id).','Course side: mappedBy.','addCourse keeps both sides in sync.']},
+  starter:`@Entity
+public class Student {
+    @Id
+    private Long id;
+
+    // TODO: owning side, join table student_course(student_id, course_id), pair unique
+    private Set<Course> courses = new HashSet<>();
+
+    public void addCourse(Course course) {
+        courses.add(course);
+        // TODO: keep the other side in sync
+    }
+}
+
+@Entity
+public class Course {
+    @Id
+    private Long id;
+
+    // TODO: inverse side
+    private Set<Student> students = new HashSet<>();
+}`,
+  tests:[
+    {n:'@ManyToMany + @JoinTable student_course', t:has(/@ManyToMany ?@JoinTable\(name ?= ?"student_course"/), h:'@ManyToMany then @JoinTable(name = "student_course", …)'},
+    {n:'joinColumns → student_id', t:has(/joinColumns ?= ?@JoinColumn\(name ?= ?"student_id"\)/), h:'joinColumns = @JoinColumn(name = "student_id")'},
+    {n:'inverseJoinColumns → course_id', t:has(/inverseJoinColumns ?= ?@JoinColumn\(name ?= ?"course_id"\)/), h:'inverseJoinColumns = @JoinColumn(name = "course_id")'},
+    {n:'Pair is unique', t:has(/uniqueConstraints ?= ?@UniqueConstraint\(columnNames ?= ?\{ ?"student_id", ?"course_id" ?\}\)/), h:'uniqueConstraints = @UniqueConstraint(columnNames = {"student_id", "course_id"})'},
+    {n:'Course side is mappedBy "courses"', t:has(/@ManyToMany\(mappedBy ?= ?"courses"\) ?private Set<Student> students/), h:'@ManyToMany(mappedBy = "courses")'},
+    {n:'addCourse syncs the other side', t:has(/course\.getStudents\(\)\.add\(this\);/), h:'course.getStudents().add(this);'},
+    {n:'No cascade remove on shared courses', t:not(/CascadeType\.(REMOVE|ALL)/), h:'Shared entities must not be cascade-deleted.'}],
+  solution:`@Entity
+public class Student {
+    @Id
+    private Long id;
+
+    @ManyToMany
+    @JoinTable(
+        name = "student_course",
+        joinColumns = @JoinColumn(name = "student_id"),
+        inverseJoinColumns = @JoinColumn(name = "course_id"),
+        uniqueConstraints = @UniqueConstraint(columnNames = {"student_id", "course_id"})
+    )
+    private Set<Course> courses = new HashSet<>();
+
+    public void addCourse(Course course) {
+        courses.add(course);
+        course.getStudents().add(this);
+    }
+}
+
+@Entity
+public class Course {
+    @Id
+    private Long id;
+
+    @ManyToMany(mappedBy = "courses")
+    private Set<Student> students = new HashSet<>();
+}`},
+
+{ id:'3-10', title:'Lombok and ownership traps', kind:'quiz', xp:15,
+  body:`<p><code>@Data</code> also generates <code>toString</code>, <code>equals</code>, <code>hashCode</code>. On bidirectional entities they walk back and forth: StackOverflowError, surprise lazy loads, huge collection comparisons. Prefer <code>@Getter @Setter @NoArgsConstructor</code>.</p>
+${deep(L3,'lombok','watch toString recurse')}`,
+  qs:[
+    {q:'println(student) with @Data on Student ↔ Department…', o:['prints fine','recurses into StackOverflowError','prints only the id','won\'t compile'], a:1, ex:'Student → Department → students → Student …'},
+    {q:'Typical owning side of bidirectional one-to-one?', o:['the side with mappedBy','the side with @JoinColumn','the bigger entity','both'], a:1, ex:'Join column = owner.'},
+    {q:'Only engineering.getStudents().add(rahul), then flush. department_id?', o:['set to 10','unchanged','deleted','duplicate row'], a:1, ex:'Inverse side doesn\'t write the FK.'},
+    {q:'Setting student.setDepartment(newDept) on a transient newDept without cascade…', o:['inserts newDept automatically','fails: references an unsaved transient instance','ignores it','stores null'], a:1, ex:'Persist it first, or cascade PERSIST.'}]},
+
+{ id:'3-local', title:'Local quest: wire up the relationships', kind:'local', xp:60,
+  body:`<p>Open <code>hibernate-quest/practice</code> in IntelliJ (it's a Maven project). The tests run real Hibernate 7 against an in-memory H2 database, so no MySQL needed. They check behaviour: the real columns, the SQL count, what reaches the database.</p><p>Your Java compiles and runs for real here. No hidden solution in the project: ask Claude to review your code if you're stuck.</p>`,
+  local:{steps:[
+    'Q3a: <code>Student.department</code> → <code>@ManyToOne</code> + <code>@JoinColumn(name = "department_id")</code>.',
+    'Q3b: <code>Department.students</code> with <code>mappedBy</code>, plus <code>addStudent</code>/<code>removeStudent</code> updating both sides.',
+    'Q3c: <code>Student.courses</code> as the owning <code>@ManyToMany</code> with join table <code>student_course</code> (unique pair); <code>Course.students</code> mappedBy; <code>addCourse</code>.',
+    'Forget mappedBy and the test spots the extra join table Hibernate creates.'],
+    cmd:'mvn test -Dtest=Q3RelationshipsTest', expectLine:'Tests run: 8, Failures: 0, Errors: 0, Skipped: 0',
+    confirm:'All 8 Q3RelationshipsTest tests pass on my machine'}},
+
+{ id:'3-boss', title:'Boss: Keeper of Keys', kind:'boss', xp:70,
+  body:`<p>All five right to win.</p>`,
+  qs:[
+    {q:'<code>mappedBy</code> points to…', o:['a column','a table','a Java field on the owning entity','a join table'], a:2, ex:'e.g. "department".'},
+    {q:'One-to-one in the schema is…', o:['FK only','FK + unique constraint','a join table','an embeddable'], a:1, ex:'Without unique it\'s many-to-one.'},
+    {q:'In @JoinTable, joinColumns refers to…', o:['the inverse entity','the owning entity','both','the primary key of the join table'], a:1, ex:'inverseJoinColumns is the other side.'},
+    {q:'@MapsId means…', o:['two ids','the associated entity\'s id is also this entity\'s id','map ids to strings','auto-increment'], a:1, ex:'Shared primary key.'},
+    {q:'Cascade decides ownership. True?', o:['True','False: cascade is lifecycle propagation, ownership decides the FK'], a:1, ex:'Separate concerns.'}]}
+]},
+
+/* ===================================================== CHAPTER 4 */
+{ id:'c4', title:'Chapter 4 · Cascade, Lazy & N+1', lessons:[
+
+{ id:'4-1', title:'What flows through a relationship?', kind:'quiz', xp:10,
+  body:`<div class="ana">Cancel a restaurant bill and its side dishes go too, but not the chef every table shares. <b>Cascade remove</b> is for things that belong only to you.</div>
+<p>A <b>cascade</b> propagates an operation (PERSIST, MERGE, REMOVE, REFRESH, DETACH, ALL) across a relationship. It's <b>off by default</b>. It is not ownership: the FK is still set by the owning side.</p>
+${deep(L4,'cascade','cascade simulator')}`,
+  qs:[
+    {q:'No cascade on Order.items. persist(order) with 3 new items saves…', o:['order + 3 items','only the order','only items','nothing'], a:1, ex:'Items stay transient.'},
+    {q:'CascadeType.REMOVE is safe on…', o:['@ManyToMany courses','Order → OrderItem it exclusively owns','Student → Department','any relationship'], a:1, ex:'Only owned children.'},
+    {q:'With cascade remove, which DELETE runs first?', o:['orders','order_item','either','none'], a:1, ex:'Children first keeps the FK valid.'},
+    {q:'CascadeType.ALL should be used…', o:['by default','only when the child shares the parent\'s whole lifecycle','on many-to-many','never'], a:1, ex:'It includes REMOVE.'}]},
+
+{ id:'4-2', title:'Save the order, save its items', kind:'java', xp:30, file:'Order.java',
+  body:`<p>Items are created with their order and deleted with it, so cascade <b>PERSIST</b> and <b>REMOVE</b> (or ALL). And because <code>OrderItem.order</code> owns <code>order_id</code>, the helper must set it, or items are saved with <code>order_id = NULL</code>.</p>
+<pre>order.addItem(item1); order.addItem(item2);
+entityManager.persist(order);   <span class="tc">// persists items too</span></pre>
+${deep(L4,'cascade','try it without the helper')}`,
+  task:{t:'Cascade and sync', items:['Cascade PERSIST and REMOVE on items.','Keep mappedBy = "order".','addItem sets the owning side.']},
+  starter:`@Entity
+@Table(name = "orders")
+public class Order {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    // TODO: items are created with the order and deleted with it
+    @OneToMany(mappedBy = "order")
+    private List<OrderItem> items = new ArrayList<>();
+
+    public void addItem(OrderItem item) {
+        items.add(item);
+        // TODO
+    }
+}`,
+  tests:[
+    {n:'Cascades persist and remove', t:c => { const a = ann(c, /@OneToMany\((.*?)\) ?private List<OrderItem> items/); return /CascadeType\.ALL/.test(a) || (/CascadeType\.PERSIST/.test(a) && /CascadeType\.REMOVE/.test(a)); }, h:'cascade = { CascadeType.PERSIST, CascadeType.REMOVE }'},
+    {n:'Still mappedBy "order"', t:has(/mappedBy ?= ?"order"/), h:'Keep mappedBy = "order".'},
+    {n:'addItem sets the owning side', t:has(/item\.setOrder\(this\);/), h:'item.setOrder(this);'},
+    {n:'addItem still adds to the list', t:has(/items\.add\(item\);/), h:'items.add(item);'}],
+  out:['insert into orders …','insert into order_item (order_id, …) values (100, …)  ×2'],
+  solution:`@Entity
+@Table(name = "orders")
+public class Order {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @OneToMany(mappedBy = "order", cascade = { CascadeType.PERSIST, CascadeType.REMOVE })
+    private List<OrderItem> items = new ArrayList<>();
+
+    public void addItem(OrderItem item) {
+        items.add(item);
+        item.setOrder(this);
+    }
+}`},
+
+{ id:'4-3', title:'Lazy, eager and the defaults', kind:'quiz', xp:15,
+  body:`<p>A static fetch strategy (<code>fetch = …</code>) is the default whenever the entity loads. <b>EAGER is a requirement; LAZY is a hint.</b> Defaults: <code>@OneToMany</code>, <code>@ManyToMany</code> LAZY; <code>@ManyToOne</code>, <code>@OneToOne</code> EAGER.</p>
+<p>Lazy to-one is a <b>proxy</b>: <code>student.getDepartment()</code> doesn't necessarily load it; <code>.getName()</code> does.</p>
+${deep(L4,'lazy','step through a lazy proxy')}`,
+  qs:[
+    {q:'Default fetch of @ManyToOne?', o:['LAZY','EAGER'], a:1, ex:'to-one is eager by default.'},
+    {q:'Default fetch of @OneToMany?', o:['LAZY','EAGER'], a:0, ex:'to-many is lazy.'},
+    {q:'Lazy department: which line can trigger SQL?', o:['Department d = s.getDepartment();','String n = s.getDepartment().getName();','neither','both always'], a:1, ex:'Reading real state initializes the proxy.'},
+    {q:'LAZY in the JPA spec is…', o:['a requirement','a hint'], a:1, ex:'Hibernate supports it well.'}]},
+
+{ id:'4-4', title:'Make the defaults lazy', kind:'java', xp:25, file:'Student.java',
+  body:`<p>Many teams set to-one relationships to <code>LAZY</code> explicitly, keeping the default object graph small. Each use case then fetches what it needs.</p>
+<div class="warn">A teammate "fixed" a slow page by making comments EAGER. Now every student load drags its comments along.</div>`,
+  task:{t:'Small default graph', items:['department: lazy.','comments: back to lazy (or the default).','No EAGER anywhere.']},
+  starter:`@Entity
+public class Student {
+    @Id @GeneratedValue
+    private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "department_id")
+    private Department department;
+
+    @OneToMany(mappedBy = "student", fetch = FetchType.EAGER)
+    private List<Comment> comments = new ArrayList<>();
+}`,
+  tests:[
+    {n:'department is LAZY', t:has(/@ManyToOne\([^)]*fetch ?= ?FetchType\.LAZY/), h:'@ManyToOne(fetch = FetchType.LAZY)'},
+    {n:'No EAGER', t:not(/FetchType\.EAGER/), h:'Remove fetch = FetchType.EAGER from comments.'},
+    {n:'comments still mapped', t:has(/@OneToMany\([^)]*mappedBy ?= ?"student"/), h:'Keep @OneToMany(mappedBy = "student").'},
+    {n:'Join column kept', t:has(/@JoinColumn\(name ?= ?"department_id"\)/), h:'Keep @JoinColumn(name = "department_id").'}],
+  solution:`@Entity
+public class Student {
+    @Id @GeneratedValue
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id")
+    private Department department;
+
+    @OneToMany(mappedBy = "student")
+    private List<Comment> comments = new ArrayList<>();
+}`},
+
+{ id:'4-5', title:'Count the N+1', kind:'quiz', xp:15,
+  body:`<div class="ana">A waiter making one trip per bowl of soup instead of carrying a tray.</div>
+<p><code>findAll()</code> = 1 query. Then the loop prints <code>student.getDepartment().getName()</code>. Each <i>new</i> department costs one more SELECT; a department already in the persistence context costs nothing. Students with no department (<code>null</code>) cost nothing.</p>
+<dl class="map"><dt><code>"lazy"</code></dt><dd>1 + number of distinct non-null departments</dd><dt><code>"graph"</code></dt><dd>@EntityGraph fetched them with the students: 1</dd><dt><code>"unused"</code></dt><dd>loop never touches department: 1</dd></dl>
+${deep(L4,'n1','N+1 simulator')}`,
+  qs:[
+    {q:'Lazy. Three students with department ids <code>[10, 10, 20]</code>. How many queries in total?', o:['2','3','4','1'], a:1, ex:'1 for the students + 2 distinct departments = 3.'},
+    {q:'Lazy. Four students, each in a different department. Queries in total?', o:['4','5','1','8'], a:1, ex:'1 + 4 departments = 5.'},
+    {q:'Lazy. Department ids <code>[10, null, 10]</code>. Queries in total?', o:['1','2','3','4'], a:1, ex:'null costs nothing, and department 10 is loaded once: 1 + 1 = 2.'},
+    {q:'<code>findAll()</code> has <code>@EntityGraph(attributePaths = "department")</code>. Queries for 3 students in 3 departments?', o:['1','2','3','4'], a:0, ex:'The graph fetches them together with the students.'},
+    {q:'The loop never touches <code>department</code>. Queries in total?', o:['0','1','3','N + 1'], a:1, ex:'Lazy data that is never used is never loaded: just the findAll().'}]},
+
+{ id:'4-6', title:'One tray: the joined query', kind:'quiz', xp:15,
+  body:`<p>The fix for N+1 is to fetch students and departments together. Hibernate commonly uses a join for an entity graph. To keep every student, including Harsh who has no department, the join must be a LEFT JOIN:</p>
+<pre>SELECT s.name, d.name AS department
+FROM students s
+LEFT JOIN departments d ON d.id = s.department_id
+ORDER BY s.id;</pre>
+${deep(L4,'graph','entity graph builder')}`,
+  qs:[
+    {q:'Which join keeps Harsh, who has no department?', o:['<code>JOIN</code> (inner join)','<code>LEFT JOIN</code> starting from students','<code>CROSS JOIN</code>','<code>RIGHT JOIN</code> starting from students'], a:1, ex:'LEFT JOIN keeps every student on the left.'},
+    {q:'In the result, Harsh\'s department column shows…', o:['an empty string','0','NULL','nothing: Harsh is dropped'], a:2, ex:'No match on the right side gives NULL.'},
+    {q:'With a plain <code>JOIN</code>, Harsh is…', o:['kept with department NULL','left out','shown twice','an error'], a:1, ex:'An inner join keeps only rows that have a match.'},
+    {q:'How many SELECTs does the joined query use for all students and their departments?', o:['one per student','1 + one per department','just 1','2'], a:2, ex:'One tray: everything comes back in a single query.'}]},
+
+{ id:'4-7', title:'@EntityGraph per method', kind:'java', xp:30, file:'StudentRepository.java',
+  body:`<p>Keep the mapping LAZY. On the one repository method that needs the department, request it: <code>@EntityGraph(attributePaths = "department")</code>. Several: <code>{ "department", "profile" }</code>. Nested: <code>"department.manager"</code>.</p>
+<div class="warn">Switching the mapping to EAGER isn't the fix: it's global and doesn't guarantee one query.</div>`,
+  task:{t:'Fix two N+1 pages', items:['findAll: fetch department.','findByActiveTrue: fetch profile and the department\'s manager.']},
+  starter:`public interface StudentRepository extends JpaRepository<Student, Long> {
+
+    // Student list prints every department name: 1 + N queries
+    // TODO
+    List<Student> findAll();
+
+    // Details page also needs profile and the department's manager
+    // TODO
+    List<Student> findByActiveTrue();
+}`,
+  tests:[
+    {n:'findAll fetches department', t:has(/@EntityGraph\(attributePaths ?= ?(?:\{ ?)?"department"(?: ?\})?\) ?List<Student> findAll\(\);/), h:'@EntityGraph(attributePaths = "department") above findAll()'},
+    {n:'findByActiveTrue: profile + department.manager', t:c => { const a = ann(c, /@EntityGraph\(attributePaths ?= ?\{([^}]*)\}\) ?List<Student> findByActiveTrue/); return /"profile"/.test(a) && /"department\.manager"/.test(a); }, h:'@EntityGraph(attributePaths = { "profile", "department.manager" })'},
+    {n:'No EAGER "fix"', t:not(/FetchType\.EAGER/), h:'Keep mappings lazy.'}],
+  solution:`public interface StudentRepository extends JpaRepository<Student, Long> {
+
+    @EntityGraph(attributePaths = "department")
+    List<Student> findAll();
+
+    @EntityGraph(attributePaths = { "profile", "department.manager" })
+    List<Student> findByActiveTrue();
+}`},
+
+{ id:'4-8', title:'Make the hidden SQL visible', kind:'java', lang:'properties', xp:20, file:'application.properties',
+  body:`<p>The simplest N+1 detector is the SQL log. Watch for the same statement repeating inside a loop with a different id.</p>
+${deep(L4,'detect','spot the N+1 in a log')}`,
+  task:{t:'Turn on SQL logging', items:['show-sql and format_sql on.','org.hibernate.SQL at DEBUG.','Bind parameters (org.hibernate.orm.jdbc.bind) at TRACE.']},
+  starter:`spring.jpa.show-sql=false
+# TODO
+`,
+  tests:[
+    {n:'show-sql=true', t:has(/spring\.jpa\.show-sql ?= ?true/), h:'spring.jpa.show-sql=true'},
+    {n:'No show-sql=false left', t:not(/spring\.jpa\.show-sql ?= ?false/), h:'Change false to true.'},
+    {n:'format_sql=true', t:has(/spring\.jpa\.properties\.hibernate\.format_sql ?= ?true/), h:'spring.jpa.properties.hibernate.format_sql=true'},
+    {n:'SQL at DEBUG', t:has(/logging\.level\.org\.hibernate\.SQL ?= ?DEBUG/), h:'logging.level.org.hibernate.SQL=DEBUG'},
+    {n:'Bind values at TRACE', t:has(/logging\.level\.org\.hibernate\.orm\.jdbc\.bind ?= ?TRACE/), h:'logging.level.org.hibernate.orm.jdbc.bind=TRACE'}],
+  solution:`spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+logging.level.org.hibernate.SQL=DEBUG
+logging.level.org.hibernate.orm.jdbc.bind=TRACE`},
+
+{ id:'4-local', title:'Local quest: cascade and kill the N+1', kind:'local', xp:60,
+  body:`<p>Open <code>hibernate-quest/practice</code> in IntelliJ (it's a Maven project). The tests run real Hibernate 7 against an in-memory H2 database, so no MySQL needed. They check behaviour: the real columns, the SQL count, what reaches the database.</p><p>Your Java compiles and runs for real here. No hidden solution in the project: ask Claude to review your code if you're stuck.</p>`,
+  local:{steps:[
+    'Q4a: <code>Order.items</code> cascades PERSIST + REMOVE; <code>addItem</code> sets the owning side.',
+    'Q4b: declare <code>findAllByOrderByIdAsc()</code> in <code>StudentRepository</code> with an <code>@EntityGraph</code>. The test allows exactly 1 SQL statement for 6 students in 3 departments.',
+    'Q4c: make <code>Student.department</code> LAZY. Checked with <code>PersistenceUnitUtil.isLoaded()</code>.',
+    'Q4d: deleting one student must not delete a course another student still takes.'],
+    cmd:'mvn test -Dtest=Q4CascadeFetchTest', expectLine:'Tests run: 6, Failures: 0, Errors: 0, Skipped: 0',
+    confirm:'All 6 Q4CascadeFetchTest tests pass on my machine'}},
+
+{ id:'4-boss', title:'Boss: N+1 Slayer', kind:'boss', xp:70,
+  body:`<p>All five right to win.</p>`,
+  qs:[
+    {q:'100 students, 3 departments, lazy, loop prints department names. Typical SQL count?', o:['1','4','101','300'], a:1, ex:'1 + 3: the context reuses loaded departments.'},
+    {q:'10 departments, loop over each department.getStudents(). SQL count?', o:['1','2','11','20'], a:2, ex:'True 1 + N for collections.'},
+    {q:'Principle against N+1?', o:['Make everything EAGER','Lazy by default, fetch the needed graph per use case','Disable the cache','Use more threads'], a:1, ex:'Then check the SQL.'},
+    {q:'Nested graph path for Student → Department → Manager?', o:['"manager"','"department.manager"','"department/manager"','"Department.Manager"'], a:1, ex:'Dot-separated property path.'},
+    {q:'Two big collections in one entity graph risk…', o:['nothing','a huge joined result with duplicated rows','losing data','a compile error'], a:1, ex:'Rows multiply.'}]}
+]},
+
+/* ===================================================== CHAPTER 5 */
+{ id:'c5', title:'Chapter 5 · Spring Data JPA', lessons:[
+
+{ id:'5-1', title:'One more layer', kind:'quiz', xp:10,
+  body:`<div class="ana">A print shop's <b>standard order form</b>: tick the boxes, the clerk already knows every procedure. Requests written in the shop's fixed phrasing need no explanation.</div>
+<p>Every repository repeats save / findById / findAll / count / delete; only entity type and id type change. <code>JpaRepository&lt;Student, Long&gt;</code> captures that. Spring creates a <b>proxy</b> at runtime; standard methods go to <code>SimpleJpaRepository</code>, which uses <code>EntityManager</code>.</p>
+${deep(L5,'vs','JPA vs Spring Data JPA')}`,
+  qs:[
+    {q:'JpaRepository belongs to…', o:['the JPA spec','Spring Data JPA','Hibernate','JDBC'], a:1, ex:'JPA has no JpaRepository.'},
+    {q:'How can an interface be injected?', o:['Spring compiles it','A runtime repository proxy implements it','It can\'t','Lombok'], a:1, ex:'Routes calls to the right execution path.'},
+    {q:'Spring Data JPA removes the need to understand…', o:['lazy loading','transactions','N+1','none of these'], a:3, ex:'It reduces boilerplate, not design.'},
+    {q:'findById(1L) ends in…', o:['a new JDBC connection always','EntityManager.find(), checking the context first','a native query','a cache in Redis'], a:1, ex:'proxy → SimpleJpaRepository → EntityManager.'}]},
+
+{ id:'5-2', title:'Delete your repository class', kind:'java', xp:25, file:'StudentRepository.java',
+  body:`<p>Replace the hand-written class with an interface. No implementation, no <code>@Repository</code> needed: Boot scans repository interfaces under the base package. Add query methods by name: <code>findBy</code> + property + keyword.</p>
+<pre><span class="tk">public interface</span> StudentRepository <span class="tk">extends</span> JpaRepository&lt;Student, Long&gt; { }</pre>`,
+  task:{t:'Declare the repository', items:['Interface extending <code>JpaRepository&lt;Student, Long&gt;</code>.','<code>Optional&lt;Student&gt; findByEmail(String email)</code>','<code>List&lt;Student&gt; findByAgeGreaterThan(Integer age)</code>','<code>boolean existsByEmail(String email)</code>']},
+  starter:`// Before: one hand-written class per entity
+@Repository
+public class StudentRepository {
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    public void save(Student student) { entityManager.persist(student); }
+    public Student findById(Long id) { return entityManager.find(Student.class, id); }
+}`,
+  tests:[
+    {n:'Interface extends JpaRepository<Student, Long>', t:has(/public interface StudentRepository extends JpaRepository<Student, ?Long>/), h:'public interface StudentRepository extends JpaRepository<Student, Long>'},
+    {n:'No class or EntityManager left', t:c => !/class StudentRepository/.test(c) && !/EntityManager/.test(c), h:'Spring generates the implementation.'},
+    {n:'findByEmail returns Optional', t:has(/Optional<Student> findByEmail\(String \w+\);/), h:'Optional<Student> findByEmail(String email);'},
+    {n:'findByAgeGreaterThan', t:has(/List<Student> findByAgeGreaterThan\(Integer \w+\);/), h:'List<Student> findByAgeGreaterThan(Integer age);'},
+    {n:'existsByEmail', t:has(/boolean existsByEmail\(String \w+\);/), h:'boolean existsByEmail(String email);'}],
+  out:['select s from Student s where s.email = ?1','select s from Student s where s.age > ?1','select count(s) > 0 … where s.email = ?1'],
+  solution:`public interface StudentRepository extends JpaRepository<Student, Long> {
+
+    Optional<Student> findByEmail(String email);
+
+    List<Student> findByAgeGreaterThan(Integer age);
+
+    boolean existsByEmail(String email);
+}`},
+
+{ id:'5-3', title:'Which interface gives what?', kind:'quiz', xp:15,
+  body:`<pre>Repository
+├── CrudRepository → ListCrudRepository
+└── PagingAndSortingRepository → ListPagingAndSortingRepository
+JpaRepository = ListCrud + ListPagingAndSorting + QueryByExample</pre>
+<p><code>save()</code> means "make persistent": new (null id/version) → <code>persist</code>; otherwise → <code>merge</code>, which returns a managed instance.</p>
+${deep(L5,'hierarchy','click through the hierarchy')}`,
+  qs:[
+    {q:'Extending only PagingAndSortingRepository (Spring Data 3) gives you save()?', o:['Yes','No'], a:1, ex:'The hierarchies are separate now.'},
+    {q:'CrudRepository.findAll() returns…', o:['List','Iterable','Page','Stream'], a:1, ex:'ListCrudRepository returns List.'},
+    {q:'Want callers unable to delete? Extend…', o:['JpaRepository','Repository and declare only the methods you allow','CrudRepository','nothing'], a:1, ex:'Marker interface + chosen methods.'},
+    {q:'save(detachedStudent) returns…', o:['the same object, now managed','a different, managed instance','void','null'], a:1, ex:'merge semantics. Use the return value.'},
+    {q:'saveAll(list) guarantees one multi-row INSERT?', o:['Yes','No: it calls save() per entity; batching is separate config'], a:1, ex:'JDBC batching needs configuration.'}]},
+
+{ id:'5-4', title:'Rename without save()', kind:'java', xp:25, file:'StudentService.java',
+  body:`<p><code>findById</code> returns <code>Optional&lt;Student&gt;</code>: unwrap with <code>.orElseThrow()</code>. Inside a transaction the loaded student is managed; the setter is enough. <code>save()</code> here is redundant: it's not what triggers the UPDATE.</p>
+<div class="warn">This code doesn't compile (Optional) and has no transaction.</div>
+${deep(L5,'methods','save() vs dirty checking')}`,
+  task:{t:'Fix renameStudent', items:['@Transactional.','Unwrap with orElseThrow().','No save().']},
+  starter:`public void renameStudent(Long id, String newName) {
+    Student student = studentRepository.findById(id);
+    student.setName(newName);
+    studentRepository.save(student);
+}`,
+  tests:[
+    {n:'@Transactional', t:has(/@Transactional(?:\(\))? ?public void renameStudent/), h:'@Transactional above the method.'},
+    {n:'Unwraps the Optional', t:has(/findById\(id\)\.orElseThrow\(/), h:'studentRepository.findById(id).orElseThrow()'},
+    {n:'Still sets the name', t:has(/\.setName\(newName\);/), h:'student.setName(newName);'},
+    {n:'No redundant save()', t:not(/\.save\(/), h:'Dirty checking does the UPDATE.'}],
+  out:['select … from students where id=?','update students set … where id=?'],
+  solution:`@Transactional
+public void renameStudent(Long id, String newName) {
+    Student student = studentRepository.findById(id).orElseThrow();
+    student.setName(newName);
+}`},
+
+{ id:'5-5', title:'Derived query → SQL', kind:'quiz', xp:15,
+  body:`<p><code>findTop3ByActiveTrueOrderByAgeDesc()</code> parses into: subject <code>findTop3By</code> (limit 3), predicate <code>ActiveTrue</code>, order <code>OrderByAgeDesc</code>. The SQL it boils down to (SQLite stores true as 1):</p>
+<pre>SELECT name, age
+FROM students
+WHERE active = 1
+ORDER BY age DESC
+LIMIT 3;</pre>
+<div class="warn">Top without OrderBy has no reliable meaning: the database has no natural row order.</div>
+${deep(L5,'derived','type any method name into the parser')}`,
+  qs:[
+    {q:'Which SQL does <code>findTop3ByActiveTrueOrderByAgeDesc()</code> boil down to?', o:['<code>SELECT name, age FROM students WHERE active = 1 ORDER BY age ASC LIMIT 3</code>','<code>SELECT name, age FROM students WHERE active = 1 ORDER BY age DESC LIMIT 3</code>','<code>SELECT name, age FROM students ORDER BY age DESC</code>','<code>SELECT name, age FROM students WHERE active = 0 ORDER BY age DESC LIMIT 3</code>'], a:1, ex:'Active only, oldest first, at most 3.'},
+    {q:'Which part of the method name gives the limit?', o:['<code>Active</code>','<code>AgeDesc</code>','<code>Top3</code>','<code>find</code>'], a:2, ex:'Top3 means at most 3 rows.'},
+    {q:'What does <code>OrderByAgeDesc</code> do?', o:['youngest first','oldest first','random order','keeps only old students'], a:1, ex:'DESC means descending: biggest age first.'},
+    {q:'<code>findTop3By…</code> without any OrderBy…', o:['is fine: the database always returns oldest first','has no reliable meaning: there is no natural row order','is a compile error','always returns the first rows by id'], a:1, ex:'Without an order, "the first 3" can be any 3.'}]},
+
+{ id:'5-6', title:'JPQL, not SQL', kind:'java', xp:30, file:'StudentRepository.java',
+  body:`<p><code>@Query</code> JPQL talks about <b>entities and fields</b>: <code>SELECT s FROM Student s</code>, never table <code>students</code> or <code>SELECT *</code>. Named parameters read better: <code>:minimumAge</code> with <code>@Param("minimumAge")</code>.</p>
+<div class="warn">This query was copied from MySQL Workbench. It's native SQL inside a JPQL annotation.</div>
+${deep(L5,'jpql','JPQL vs generated SQL')}`,
+  task:{t:'Rewrite as JPQL', items:['Entity <code>Student</code>, alias <code>s</code>.','Named parameters :minimumAge, :maximumAge with @Param.','Keep it on one line (a plain string).']},
+  starter:`public interface StudentRepository extends JpaRepository<Student, Long> {
+
+    @Query("SELECT * FROM students s WHERE s.age >= ? AND s.age <= ?")
+    List<Student> findStudentsInAgeRange(Integer minimumAge, Integer maximumAge);
+}`,
+  tests:[
+    {n:'SELECT s FROM Student s', t:c => /select s from Student s\b/i.test(c) && /(from|FROM) Student s\b/.test(c), h:'"SELECT s FROM Student s WHERE …"'},
+    {n:'No SELECT * or table name', t:c => !/select \*/i.test(c) && !/\bstudents s\b/.test(c), h:'JPQL selects the alias and uses the entity name.'},
+    {n:'Range uses named parameters', t:c => (/s\.age ?>= ?:minimumAge/.test(c) && /s\.age ?<= ?:maximumAge/.test(c)) || /s\.age between :minimumAge and :maximumAge/i.test(c), h:'s.age >= :minimumAge AND s.age <= :maximumAge'},
+    {n:'No positional ?', t:not(/\?/), h:'Replace ? with :minimumAge / :maximumAge.'},
+    {n:'@Param on both arguments', t:c => /@Param\("minimumAge"\) ?Integer minimumAge/.test(c) && /@Param\("maximumAge"\) ?Integer maximumAge/.test(c), h:'@Param("minimumAge") Integer minimumAge, @Param("maximumAge") Integer maximumAge'}],
+  solution:`public interface StudentRepository extends JpaRepository<Student, Long> {
+
+    @Query("SELECT s FROM Student s WHERE s.age >= :minimumAge AND s.age <= :maximumAge")
+    List<Student> findStudentsInAgeRange(@Param("minimumAge") Integer minimumAge,
+                                         @Param("maximumAge") Integer maximumAge);
+}`},
+
+{ id:'5-7', title:'Never trust ?sortBy=', kind:'java', xp:30, file:'StudentService.java',
+  body:`<p><code>GET /students?sortBy=…&amp;direction=…</code> goes straight into <code>Sort</code>. A bad property becomes an ugly 500. Validate against an <b>allowlist</b> first, and add <code>id</code> as a <b>tie-breaker</b> so equal names don't shuffle between pages.</p>
+${deep(L5,'sort','sort simulator with allowlist')}`,
+  task:{t:'Safe dynamic sorting', items:['<code>ALLOWED_SORT_FIELDS = Set.of("name", "age", "admissionDate")</code>','Reject others with <code>IllegalArgumentException("Unsupported sort property: " + sortBy)</code> before building the Sort.','Then sort by id ascending as tie-breaker.']},
+  starter:`public List<Student> list(String sortBy, String direction) {
+    // straight from GET /students?sortBy=...&direction=...
+    Sort sort = Sort.by(Sort.Direction.fromString(direction), sortBy);
+    return studentRepository.findAll(sort);
+}`,
+  tests:[
+    {n:'Allowlist with the three fields', t:c => /Set<String> ALLOWED_SORT_FIELDS ?= ?Set\.of\(/.test(c) && ['"name"','"age"','"admissionDate"'].every(s => ann(c, /ALLOWED_SORT_FIELDS ?= ?Set\.of\(([^)]*)\)/).includes(s)), h:'private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("name", "age", "admissionDate");'},
+    {n:'Rejects unknown properties', t:c => /!ALLOWED_SORT_FIELDS\.contains\(sortBy\)/.test(c) && /throw new IllegalArgumentException/.test(c), h:'if (!ALLOWED_SORT_FIELDS.contains(sortBy)) throw new IllegalArgumentException(…);'},
+    {n:'Validates before building the Sort', t:c => c.indexOf('ALLOWED_SORT_FIELDS.contains') > -1 && c.indexOf('ALLOWED_SORT_FIELDS.contains') < c.indexOf('Sort.Direction.fromString'), h:'Check first, then Sort.by(...).'},
+    {n:'id tie-breaker', t:has(/\.and\(Sort\.by\("id"\)(?:\.ascending\(\))?\)/), h:'.and(Sort.by("id").ascending())'}],
+  solution:`private static final Set<String> ALLOWED_SORT_FIELDS =
+        Set.of("name", "age", "admissionDate");
+
+public List<Student> list(String sortBy, String direction) {
+    if (!ALLOWED_SORT_FIELDS.contains(sortBy)) {
+        throw new IllegalArgumentException("Unsupported sort property: " + sortBy);
+    }
+    Sort sort = Sort.by(Sort.Direction.fromString(direction), sortBy)
+            .and(Sort.by("id").ascending());
+    return studentRepository.findAll(sort);
+}`},
+
+{ id:'5-8', title:'Page math', kind:'quiz', xp:15,
+  body:`<p>Pages are zero-based. <b>offset = page × size</b>. The last page may be short; past the end it's empty. A <code>Page</code> knows:</p>
+<dl class="map"><dt>offset</dt><dd><code>page × size</code></dd><dt>totalPages</dt><dd><code>ceil(total / size)</code></dd><dt>numberOfElements</dt><dd>rows on this page, never negative: <code>max(0, min(size, total − offset))</code></dd><dt>hasNext</dt><dd><code>page &lt; totalPages − 1</code></dd></dl>
+<pre>total 45, page 2, size 20 → offset 40, totalPages 3, numberOfElements 5, hasNext false</pre>
+${deep(L5,'page','pagination calculator')}`,
+  qs:[
+    {q:'What is the offset of page 2 with size 20?', o:['2','20','40','60'], a:2, ex:'offset = page × size = 2 × 20.'},
+    {q:'How many pages do 45 items make with size 20?', o:['2','3','4','45'], a:1, ex:'ceil(45 / 20) = 3.'},
+    {q:'Total 45, size 20. How many elements are on page 2?', o:['20','5','0','25'], a:1, ex:'45 − 40 = 5 items left.'},
+    {q:'Total 45, size 20. How many elements are on page 3 (past the end)?', o:['20','5','0','−15'], a:2, ex:'It is never negative: past the end the page is empty.'},
+    {q:'30 items, size 10, page 1. Is there a next page?', o:['true','false','null','an error'], a:0, ex:'3 pages (0, 1, 2). Page 1 is not the last one.'}]},
+
+{ id:'5-9', title:'Page 1, sorted, in SQL', kind:'quiz', xp:15,
+  body:`<p><code>PageRequest.of(1, 3, Sort.by("name").ascending().and(Sort.by("id")))</code> becomes a content query with LIMIT and OFFSET (syntax is database-dependent; SQLite uses <code>LIMIT … OFFSET …</code>):</p>
+<pre>SELECT id, name
+FROM students
+ORDER BY name ASC, id ASC
+LIMIT 3 OFFSET 3;</pre>`,
+  qs:[
+    {q:'<code>PageRequest.of(1, 3)</code> skips how many rows?', o:['1 row','3 rows','4 rows','no rows'], a:1, ex:'offset = page × size = 1 × 3.'},
+    {q:'Page numbers in Spring Data are…', o:['zero-based: page 0 is the first page','one-based: page 1 is the first page','multiples of 10','random'], a:0, ex:'Page 1 is the second page.'},
+    {q:'Which clause does page 1, size 3, sorted by name then id produce?', o:['<code>ORDER BY name LIMIT 1 OFFSET 3</code>','<code>ORDER BY name ASC, id ASC LIMIT 3 OFFSET 1</code>','<code>ORDER BY name ASC, id ASC LIMIT 3 OFFSET 3</code>','<code>ORDER BY id LIMIT 3</code>'], a:2, ex:'LIMIT = size, OFFSET = page × size.'},
+    {q:'Why add <code>id</code> as a second sort?', o:['to make the order the same every time when two names are equal','to hide the id column','to make the query faster','Spring requires it'], a:0, ex:'A tie-breaker keeps pages from overlapping or missing rows.'}]},
+
+{ id:'5-10', title:'Paged @Query with a countQuery', kind:'java', xp:30, file:'StudentRepository.java',
+  body:`<p>A <code>Page</code> needs totals, so Spring runs a second <b>count query</b>. For joins, grouping, projections, fetch joins or native SQL, write it yourself with <code>countQuery</code>: same filters, no ordering, no fetching.</p>
+<pre>@Query(value = <span class="ts">"…"</span>, countQuery = <span class="ts">"SELECT COUNT(s) …"</span>)</pre>`,
+  task:{t:'Make it paged', items:['Return <code>Page&lt;Student&gt;</code> and accept a <code>Pageable</code>.','<code>value</code> = the existing JPQL.','<code>countQuery</code> = COUNT(s) with the same join and filters, no ORDER BY.']},
+  starter:`@Query("SELECT s FROM Student s JOIN s.department d WHERE s.active = true AND d.name = :departmentName")
+List<Student> findActiveStudentsByDepartment(@Param("departmentName") String departmentName);`,
+  tests:[
+    {n:'Returns Page<Student>', t:has(/Page<Student> findActiveStudentsByDepartment\(/), h:'Page<Student> findActiveStudentsByDepartment(…)'},
+    {n:'Accepts a Pageable', t:has(/Pageable \w+\);/), h:'…, Pageable pageable);'},
+    {n:'value = the content query', t:has(/value ?= ?"SELECT s FROM Student s JOIN s\.department d/i), h:'value = "SELECT s FROM Student s JOIN s.department d WHERE …"'},
+    {n:'countQuery counts with the same filters', t:c => { const q = ann(c, /countQuery ?= ?"([^"]*)"/); return /select count\(s\) from Student s join s\.department d/i.test(q) && /s\.active ?= ?true/i.test(q) && /d\.name ?= ?:departmentName/.test(q); }, h:'countQuery = "SELECT COUNT(s) FROM Student s JOIN s.department d WHERE s.active = true AND d.name = :departmentName"'},
+    {n:'No ORDER BY in the count', t:c => !/order by/i.test(ann(c, /countQuery ?= ?"([^"]*)"/)), h:'Counting doesn\'t need ordering.'}],
+  solution:`@Query(value = "SELECT s FROM Student s JOIN s.department d WHERE s.active = true AND d.name = :departmentName",
+       countQuery = "SELECT COUNT(s) FROM Student s JOIN s.department d WHERE s.active = true AND d.name = :departmentName")
+Page<Student> findActiveStudentsByDepartment(@Param("departmentName") String departmentName, Pageable pageable);`},
+
+{ id:'5-11', title:'Page or Slice?', kind:'quiz', xp:15,
+  body:`<p><code>Page</code>: content + totals (usually a count query). <code>Slice</code>: content + hasNext, commonly by fetching one extra row; no totals.</p>
+${deep(L5,'slice','compare the SQL')}`,
+  qs:[
+    {q:'Infinite scroll "load more" button. Use…', o:['Page','Slice'], a:1, ex:'No total needed.'},
+    {q:'UI shows "page 3 of 25". Use…', o:['Page','Slice'], a:0, ex:'Needs totalPages.'},
+    {q:'Slice with size 10 commonly fetches…', o:['10 rows + count','11 rows, no count','all rows','10 rows, no hasNext'], a:1, ex:'The extra row tells hasNext.'},
+    {q:'PageRequest.of(-1, 10)?', o:['page 0','throws: page must be ≥ 0','last page','empty page'], a:1, ex:'Non-negative page, size > 0.'}]},
+
+{ id:'5-local', title:'Local quest: let Spring Data write it', kind:'local', xp:60,
+  body:`<p>Open <code>hibernate-quest/practice</code> in IntelliJ (it's a Maven project). The tests run real Hibernate 7 against an in-memory H2 database, so no MySQL needed. They check behaviour: the real columns, the SQL count, what reaches the database.</p><p>Your Java compiles and runs for real here. No hidden solution in the project: ask Claude to review your code if you're stuck.</p>`,
+  local:{steps:[
+    'Q5a/b: declare the derived queries listed in <code>StudentRepository</code>\'s comment. A missing method fails with the exact signature to add.',
+    'Q5c: <code>findStudentsInAgeRange</code> as JPQL <code>@Query</code> with <code>:minimumAge</code> / <code>:maximumAge</code>.',
+    'Q5d: <code>StudentQueryService.buildSort()</code>: allowlist + id tie-breaker.',
+    'Q5e: <code>activePage()</code>: <code>findByActiveTrue(Pageable)</code>, sorted by name then id, size capped at 50.'],
+    cmd:'mvn test -Dtest=Q5SpringDataTest', expectLine:'Tests run: 10, Failures: 0, Errors: 0, Skipped: 0',
+    confirm:'All 10 Q5SpringDataTest tests pass on my machine'}},
+
+{ id:'5-boss', title:'Final Boss: Repository Architect', kind:'boss', xp:80,
+  body:`<p>The last five. All must be right.</p>`,
+  qs:[
+    {q:'<code>findByNameContaining("har")</code> binds…', o:['"har"','"%har%"','"har%"','"%har"'], a:1, ex:'Containing adds the % for you; Like doesn\'t.'},
+    {q:'JPQL join from Student to its department is written…', o:['JOIN departments d ON s.department_id = d.id','JOIN s.department d','JOIN Department ON id','You can\'t join in JPQL'], a:1, ex:'Follow the mapped relationship.'},
+    {q:'Native query trade-off?', o:['None','Coupled to schema and maybe vendor','Slower always','No parameters allowed'], a:1, ex:'Use when the benefit outweighs portability.'},
+    {q:'Sorting by name only, many equal names, across pages…', o:['always stable','rows may shuffle; add id as tie-breaker','throws','sorted by id anyway'], a:1, ex:'Deterministic order needs a unique tie-breaker.'},
+    {q:'JPA → Hibernate → Spring Data JPA. Which is a repository abstraction?', o:['JPA','Hibernate','Spring Data JPA','JDBC'], a:2, ex:'Built on top of JPA, using the provider underneath.'}]}
+]}
+];
+/* ================= END COURSE DATA ================= */
+
+/* ================= ENGINE ================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const ALL = COURSE.flatMap(ch => ch.lessons.map(l => Object.assign(l, { chapter: ch })));
+const KEY = CONFIG.storageKey;
+document.getElementById('brand-name').textContent = CONFIG.title;
+const S = { done:{}, xp:0, fails:{}, code:{}, peeked:{}, unlockAll:false, cur:null };
+try { const raw = localStorage.getItem(KEY); if (raw) Object.assign(S, JSON.parse(raw)); } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+const KIND = { quiz:'QUIZ', sql:'SQL', java:'CODE', js:'CODE', attack:'ATTACK', local:'LOCAL QUEST', boss:'BOSS' };
+
+let SQLJS = null, sqlErr = null;
+if (!SEED) sqlErr = null; else if (window.initSqlJs) initSqlJs().then(s => { SQLJS = s; if (cur() && ['sql','attack'].includes(cur().kind)) openLesson(cur().id); }).catch(e => sqlErr = e);
+else sqlErr = new Error('SQL engine script did not load');
+
+const idx = id => ALL.findIndex(l => l.id === id);
+const cur = () => ALL[idx(S.cur)] || ALL[0];
+const unlocked = i => i === 0 || S.unlockAll || S.done[ALL[i].id]
+  || ALL[i].chapter !== ALL[i - 1].chapter        // first lesson of every chapter is always open
+  || S.done[ALL[i - 1].id];                       // inside a chapter: previous lesson must be done
+
+/* ---------- top bar & sidebar ---------- */
+function renderTop() {
+  const lv = Math.floor(S.xp / 100) + 1, into = S.xp % 100;
+  $('#lv').textContent = 'Lv ' + lv;
+  $('#xpfill').style.width = into + '%';
+  $('#xptext').textContent = `${S.xp} XP · ${100 - into} to Lv ${lv + 1}`;
+  $('#donecount').textContent = ALL.filter(l => S.done[l.id]).length;
+  $('#total').textContent = ALL.length;
+}
+function renderSide() {
+  let n = 0;
+  $('#side').innerHTML = COURSE.map(ch => {
+    const d = ch.lessons.filter(l => S.done[l.id]).length;
+    return `<div class="chap"><h3><span>${esc(ch.title)}</span><span>${d}/${ch.lessons.length}</span></h3><ol>` +
+      ch.lessons.map(l => {
+        const i = idx(l.id), lock = !unlocked(i), num = l.kind === 'boss' ? 'B' : (++n);
+        return `<li><button type="button" class="li ${S.done[l.id] ? 'done' : ''} ${S.cur === l.id ? 'cur' : ''} ${lock ? 'locked' : ''} ${l.kind === 'boss' ? 'boss' : ''}" data-id="${l.id}" ${lock ? 'aria-disabled="true" title="Finish the previous lesson to unlock"' : ''}>
+          <span class="dot">${S.done[l.id] ? '✓' : num}</span><span>${esc(l.title)}</span><span class="k">${lock ? 'locked' : KIND[l.kind]}</span></button></li>`;
+      }).join('') + '</ol></div>';
+  }).join('') + `<div class="side-foot">
+      <span>Every chapter is open. Inside a chapter, lessons unlock one by one.</span>
+      <label for="unlock-all"><input type="checkbox" id="unlock-all" ${S.unlockAll ? 'checked' : ''}> Unlock all lessons (review mode)</label>
+      ${CONFIG.labs.length ? `<span>Labs: ${CONFIG.labs.map(x => `<a href="${x.url}" target="_blank" rel="noopener">${esc(x.name)}</a>`).join(' · ')}</span>` : ''}
+      ${CONFIG.localProject ? `<span>Local project: <code>${esc(CONFIG.localProject)}</code></span>` : ''}
+      <span id="reset-zone"><button class="tbtn" type="button" id="reset-btn">Reset progress</button></span>
+    </div>`;
+}
+$('#side').addEventListener('click', e => {
+  const b = e.target.closest('.li');
+  if (b) { if (b.classList.contains('locked')) return; openLesson(b.dataset.id); if (matchMedia('(max-width:820px)').matches) toggleMenu(false); return; }
+  if (e.target.id === 'reset-btn') {
+    $('#reset-zone').innerHTML = `<span class="confirm">Erase all XP and progress? <button class="tbtn" type="button" id="reset-yes">Erase</button><button class="tbtn" type="button" id="reset-no">Keep</button></span>`;
+  }
+  if (e.target.id === 'reset-yes') { Object.assign(S, { done:{}, xp:0, fails:{}, code:{}, peeked:{}, cur:ALL[0].id }); save(); refresh(); openLesson(ALL[0].id); }
+  if (e.target.id === 'reset-no') renderSide();
+});
+$('#side').addEventListener('change', e => { if (e.target.id === 'unlock-all') { S.unlockAll = e.target.checked; save(); renderSide(); } });
+function toggleMenu(force) {
+  const open = force ?? !$('#side').classList.contains('open');
+  $('#side').classList.toggle('open', open); $('#menu-btn').setAttribute('aria-expanded', open);
+}
+$('#menu-btn').onclick = () => toggleMenu();
+function refresh() { renderTop(); renderSide(); }
+
+/* ---------- rewards ---------- */
+function award(l) {
+  if (S.done[l.id]) return 0;
+  const gained = Math.round(l.xp * (S.peeked[l.id] ? 0.5 : 1));
+  S.done[l.id] = true; S.xp += gained; save(); refresh();
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = `+${gained} XP`;
+  document.body.append(t); setTimeout(() => t.remove(), 1900);
+  return gained;
+}
+function nextBtn(l) {
+  const i = idx(l.id), nx = ALL[i + 1];
+  return nx ? `<button class="btn ok" type="button" data-next="${nx.id}">Next: ${esc(nx.title)} →</button>` : `<span>Course complete. Level ${Math.floor(S.xp / 100) + 1}!</span>`;
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-next]'); if (b) openLesson(b.dataset.next); });
+document.addEventListener('click', e => {
+  if (e.target.closest('#exit-focus')) {
+    document.body.classList.remove('focus');
+    e.target.closest('#exit-focus').remove();
+    const f = $('#ed-focus'); if (f) f.textContent = '⤢ Bigger editor';
+  }
+});
+
+/* ---------- lesson ---------- */
+function openLesson(id) {
+  const i = idx(id); if (i < 0 || !unlocked(i)) id = ALL.find((l, k) => unlocked(k) && !S.done[l.id])?.id || ALL[0].id;
+  S.cur = id; save();
+  const l = cur();
+  try { if (location.hash !== '#l' + id) history.replaceState(null, '', '#l' + id); } catch (e) {}
+  $('#lesson').innerHTML = `<span class="crumb">${esc(l.chapter.title)} · lesson ${idx(l.id) + 1} of ${ALL.length}</span><h1>${esc(l.title)}</h1><div class="body">${l.body}</div>`;
+  renderChallenge(l);
+  renderSide();
+  window.scrollTo({ top: 0 });
+}
+
+function head(l) {
+  return `<div class="chal-head"><span class="kind ${l.kind}">${KIND[l.kind]}</span><span class="reward">+${l.xp} XP</span>${S.done[l.id] ? '<span class="donechip">✓ completed</span>' : ''}${document.body.classList.contains('focus') ? '<button class="tbtn" type="button" id="exit-focus" style="margin-left:auto">⤡ Show lesson &amp; menu</button>' : ''}</div>`;
+}
+function taskBox(l) {
+  return l.task ? `<div class="task"><b class="t">${esc(l.task.t)}</b><ul>${l.task.items.map(x => `<li>${x}</li>`).join('')}</ul></div>` : '';
+}
+function renderChallenge(l) {
+  const c = $('#chal');
+  if (!['java', 'sql', 'js'].includes(l.kind)) document.body.classList.remove('focus');  // only editor lessons use the big-editor mode
+  if (l.kind === 'quiz' || l.kind === 'boss') return quiz(c, l);
+  if (l.kind === 'local') return local(c, l);
+  if (l.kind === 'attack') return attack(c, l);
+  return editor(c, l);
+}
+
+/* ---------- quiz ---------- */
+function quiz(c, l) {
+  const pick = {};
+  c.innerHTML = head(l) + `<div class="qz">${l.qs.map((q, i) => `<div class="qq" data-q="${i}"><div class="qt">${i + 1}. ${q.q}</div>${q.o.map((o, k) => `<button type="button" class="opt" data-k="${k}"><span class="l">${'ABCD'[k]}</span><span>${o}</span></button>`).join('')}<div class="ex" hidden></div></div>`).join('')}</div>
+    <div class="actions"><button class="btn go" type="button" id="q-sub">Submit answers</button><span class="hintk">${l.kind === 'boss' ? 'Boss rules: no explanations until you win.' : 'Pick one answer per question.'}</span></div><div id="q-res"></div>`;
+  c.querySelectorAll('.qq').forEach(qq => qq.addEventListener('click', e => {
+    const b = e.target.closest('.opt'); if (!b) return;
+    qq.querySelectorAll('.opt').forEach(o => o.classList.remove('sel', 'right', 'wrong'));
+    b.classList.add('sel'); pick[qq.dataset.q] = +b.dataset.k;
+  }));
+  $('#q-sub').onclick = () => {
+    if (Object.keys(pick).length < l.qs.length) { $('#q-res').innerHTML = `<div class="banner lose">Answer all ${l.qs.length} questions first.</div>`; return; }
+    let right = 0;
+    l.qs.forEach((q, i) => {
+      const qq = c.querySelector(`[data-q="${i}"]`), ok = pick[i] === q.a, ex = qq.querySelector('.ex');
+      qq.querySelectorAll('.opt').forEach(o => o.classList.remove('right', 'wrong'));
+      qq.querySelector(`[data-k="${pick[i]}"]`).classList.add(ok ? 'right' : 'wrong');
+      if (ok) right++;
+      if (l.kind !== 'boss') { ex.hidden = false; ex.innerHTML = (ok ? '✓ ' : '✗ ') + q.ex; }
+    });
+    if (right === l.qs.length) {
+      if (l.kind === 'boss') l.qs.forEach((q, i) => { const ex = c.querySelector(`[data-q="${i}"] .ex`); ex.hidden = false; ex.innerHTML = '✓ ' + q.ex; });
+      const g = award(l);
+      $('#q-res').innerHTML = `<div class="banner win"><span>All ${right} correct${g ? ` · +${g} XP` : ''}</span>${nextBtn(l)}</div>`;
+    } else {
+      S.fails[l.id] = (S.fails[l.id] || 0) + 1; save();
+      $('#q-res').innerHTML = `<div class="banner lose">${right} / ${l.qs.length} correct. ${l.kind === 'boss' ? 'Re-read the chapter and try again.' : 'Read the notes under the red ones and retry.'}</div>`;
+    }
+  };
+}
+
+/* ---------- local quest ---------- */
+function local(c, l) {
+  c.innerHTML = head(l) + `<div class="task"><b class="t">Do this on your machine</b><ol class="steps">${l.local.steps.map(s => `<li>${s}</li>`).join('')}</ol></div>
+    <div class="con"><div class="ch"><span>terminal</span><span>expected</span></div><div class="cb"><div class="info">$ ${esc(l.local.cmd)}</div><div class="pass">[INFO] ${esc(l.local.expectLine)}</div><div class="pass">[INFO] BUILD SUCCESS</div></div></div>
+    <label class="check" for="lc"><input type="checkbox" id="lc" ${S.done[l.id] ? 'checked disabled' : ''}><span>${esc(l.local.confirm)}</span></label><div id="lc-res">${S.done[l.id] ? `<div class="banner win"><span>Quest cleared</span>${nextBtn(l)}</div>` : ''}</div>`;
+  $('#lc').onchange = e => { if (e.target.checked) { e.target.disabled = true; const g = award(l); $('#lc-res').innerHTML = `<div class="banner win"><span>Quest cleared · +${g} XP</span>${nextBtn(l)}</div>`; } };
+}
+
+/* ---------- SQL helpers ---------- */
+function freshDb() { const db = new SQLJS.Database(); db.run(SEED); return db; }
+// Always free the database afterwards. The in-browser engine has a fixed memory budget.
+function withDb(fn) { const db = freshDb(); try { return fn(db); } finally { try { db.close(); } catch (e) {} } }
+const sqlErrMsg = err => /Aborted|OOM|out of memory/i.test(err.message)
+  ? 'The in-browser database ran out of memory. Reload the page; your progress and code are saved.'
+  : 'SQL error: ' + err.message;
+function runAll(db, sql) {
+  const out = [];
+  for (const st of db.iterateStatements(sql)) {
+    const cols = st.getColumnNames();
+    if (cols.length) { const rows = []; while (st.step()) rows.push(st.get()); out.push({ sql: st.getSQL(), cols, rows }); }
+    else { st.step(); out.push({ sql: st.getSQL(), affected: db.getRowsModified() }); }
+  }
+  return out;
+}
+function table(r) {
+  return `<table><tr>${r.cols.map(h => `<th>${esc(h)}</th>`).join('')}</tr>${r.rows.slice(0, 50).map(row => `<tr>${row.map(v => v === null ? '<td class="null">NULL</td>' : `<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</table><div class="info">${r.rows.length} row${r.rows.length === 1 ? '' : 's'}</div>`;
+}
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+/* ---------- normalizer for code checks ---------- */
+function normalize(code, lang) {
+  if (lang === 'properties') return code.split('\n').map(x => x.trim()).filter(x => x && !x.startsWith('#')).join(' ').replace(/\s+/g, ' ');
+  let out = '', buf = '', i = 0; const n = code.length;
+  const flush = () => { out += buf.replace(/\s+/g, ' ').replace(/ ?([()[\],;.{}]) ?/g, '$1'); buf = ''; };
+  while (i < n) {
+    const ch = code[i], nx = code[i + 1];
+    if (ch === '/' && nx === '/') { while (i < n && code[i] !== '\n') i++; buf += ' '; continue; }
+    if (ch === '/' && nx === '*') { i += 2; while (i < n && !(code[i] === '*' && code[i + 1] === '/')) i++; i += 2; buf += ' '; continue; }
+    if (ch === '"' || ch === "'" || ch === '`') {
+      flush(); let j = i + 1;
+      while (j < n && code[j] !== ch && (ch === '`' || code[j] !== '\n')) { if (code[j] === '\\') j++; j++; }
+      j++; out += code.slice(i, j).replace(/\s+/g, ' '); i = j; continue;
+    }
+    buf += ch; i++;
+  }
+  flush(); return out.trim();
+}
+
+/* ---------- editor challenge (java / properties / sql) ---------- */
+function editor(c, l) {
+  const isSql = l.kind === 'sql', code = S.code[l.id] ?? l.starter;
+  const isJs = l.kind === 'js';
+  const fname = l.file || (isSql ? 'query.sql' : isJs ? 'solution.js' : 'Main.java');
+  c.innerHTML = head(l) + taskBox(l) + `
+    <div class="ed${S.code[l.id] == null ? ' fresh' : ''}" id="ed"><div class="file"><span>${esc(fname)}<span class="edit-tip"> · ✎ YOUR CODE: click inside and replace the TODO lines</span></span><span class="ed-tools"><button class="tbtn" type="button" id="ed-focus">${document.body.classList.contains('focus') ? '⤡ Show lesson' : '⤢ Bigger editor'}</button><span id="ed-reset-zone"><button class="tbtn" type="button" id="ed-reset">Reset code</button></span></span></div>
+      <pre class="gut" id="gut" aria-hidden="true"></pre><textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Code editor"></textarea></div>
+    <div class="actions">${isSql ? '<button class="btn" type="button" id="run">▶ Run</button>' : ''}<button class="btn go" type="button" id="submit">${isSql ? 'Submit' : 'Run tests'}</button>
+      <span id="sol-zone"></span><span class="hintk">Ctrl + Enter = ${isSql ? 'Run' : 'Run tests'}</span></div>
+    <div class="con" id="con"><div class="ch"><span>console</span><span>${isSql ? 'SQLite in your browser' : isJs ? 'JavaScript · runs for real' : l.lang === 'properties' ? 'config checker' : 'Java checker · rules, not a compiler'}</span></div><div class="cb" id="cb"><div class="info">${isSql ? 'Press Run to execute. Submit checks your answer.' : 'Press Run tests. Each check gives a hint when it fails.'}</div></div></div>
+    <div id="res"></div>${l.kind === 'java' && l.lang !== 'properties' ? '<p class="hintk">This checks the shape of your code. The local quests compile and run real Java tests.</p>' : ''}`;
+  const ta = $('#code'), gut = $('#gut');
+  ta.value = code;
+  const gutter = () => { gut.textContent = Array.from({ length: ta.value.split('\n').length }, (_, k) => k + 1).join('\n'); gut.scrollTop = ta.scrollTop; };
+  gutter();
+  ta.addEventListener('input', () => { S.code[l.id] = ta.value; save(); gutter(); $('#ed').classList.remove('fresh'); });
+  ta.addEventListener('scroll', () => gut.scrollTop = ta.scrollTop);
+  // VS Code-style editing: auto-close pairs, step over closers, smart Enter/Backspace, Tab/Shift+Tab.
+  const PAIRS = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'" };
+  const CLOSERS = new Set([')', ']', '}', '"', "'"]);
+  const put = (text, a, b, caret) => {   // execCommand keeps Ctrl+Z working
+    ta.setSelectionRange(a, b);
+    if (!document.execCommand('insertText', false, text)) { ta.setRangeText(text, a, b, 'end'); ta.dispatchEvent(new Event('input')); }
+    if (caret != null) ta.setSelectionRange(caret, caret);
+  };
+  ta.addEventListener('keydown', e => {
+    const s = ta.selectionStart, en = ta.selectionEnd, v = ta.value, prev = v[s - 1], next = v[s];
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); (isSql ? $('#run') : $('#submit')).click(); return; }
+    if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        const ls = v.lastIndexOf('\n', s - 1) + 1, m = v.slice(ls, ls + 4).match(/^ {1,4}/);
+        if (m) { put('', ls, ls + m[0].length); ta.setSelectionRange(Math.max(ls, s - m[0].length), Math.max(ls, en - m[0].length)); }
+      } else put('    ', s, en);
+      return;
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const line = v.slice(0, s).split('\n').pop(), base = line.match(/^\s*/)[0], opens = /[{([]\s*$/.test(line), inner = base + (opens ? '    ' : '');
+      if (opens && s === en && /^[}\])]/.test(next || '')) put('\n' + inner + '\n' + base, s, en, s + 1 + inner.length);
+      else put('\n' + inner, s, en);
+      return;
+    }
+    if (e.key === 'Backspace' && s === en && s > 0 && PAIRS[prev] && PAIRS[prev] === next) { e.preventDefault(); put('', s - 1, s + 1); return; }
+    if (s === en && next === e.key && CLOSERS.has(e.key)) { e.preventDefault(); ta.setSelectionRange(s + 1, s + 1); return; }
+    if (PAIRS[e.key]) {
+      const quote = e.key === '"' || e.key === "'";
+      if (s !== en) { e.preventDefault(); put(e.key + v.slice(s, en) + PAIRS[e.key], s, en); ta.setSelectionRange(s + 1, en + 1); return; }
+      if (quote && /\w/.test(prev || '')) return;          // don't pair the apostrophe in "don't"
+      if (next && !/[\s)\]};,]/.test(next)) return;         // only pair before space, a closer or end of line
+      e.preventDefault(); put(e.key + PAIRS[e.key], s, en, s + 1);
+    }
+  });
+  const bindReset = () => {
+    $('#ed-reset').onclick = () => {
+      $('#ed-reset-zone').innerHTML = `<span class="confirm">Lose your edits? <button class="tbtn" type="button" id="er-yes">Reset</button><button class="tbtn" type="button" id="er-no">Keep</button></span>`;
+      $('#er-yes').onclick = () => { delete S.code[l.id]; save(); editor(c, l); };
+      $('#er-no').onclick = () => { $('#ed-reset-zone').innerHTML = '<button class="tbtn" type="button" id="ed-reset">Reset code</button>'; bindReset(); };
+    };
+  };
+  bindReset();
+  $('#ed-focus').onclick = () => {
+    const on = document.body.classList.toggle('focus');
+    $('#ed-focus').textContent = on ? '⤡ Show lesson' : '⤢ Bigger editor';
+    $('#exit-focus')?.remove();
+    if (on) $('.chal-head').insertAdjacentHTML('beforeend', '<button class="tbtn" type="button" id="exit-focus" style="margin-left:auto">⤡ Show lesson &amp; menu</button>');
+    ta.focus();
+  };
+  solZone(l);
+  const cb = $('#cb');
+  if (isSql) {
+    $('#run').onclick = () => {
+      if (!SQLJS) { cb.innerHTML = `<div class="fail">${sqlErr ? 'The SQL engine could not load. Check your connection and reload.' : 'SQL engine is still loading…'}</div>`; return; }
+      try {
+        const res = withDb(db => runAll(db, ta.value));
+        cb.innerHTML = res.length ? res.map(r => `<div class="info">› ${esc(r.sql.trim().slice(0, 90))}</div>` + (r.cols ? table(r) : `<div class="out">${r.affected} row${r.affected === 1 ? '' : 's'} affected <span class="info">(what executeUpdate() would return)</span></div>`)).join('') : '<div class="info">Nothing to run.</div>';
+      } catch (err) { cb.innerHTML = `<div class="fail">${esc(sqlErrMsg(err))}</div>`; }
+    };
+  }
+  $('#submit').onclick = () => isSql ? submitSql(l, ta.value, cb) : isJs ? submitJs(l, ta.value, cb) : submitCode(l, ta.value, cb);
+}
+function solZone(l) {
+  const z = $('#sol-zone'); if (!z) return;
+  if ((S.fails[l.id] || 0) < 2 && !S.peeked[l.id]) { z.innerHTML = ''; return; }
+  z.innerHTML = `<button class="btn ghost" type="button" id="sol">Show solution</button>`;
+  $('#sol').onclick = () => {
+    z.innerHTML = `<span class="confirm">${S.done[l.id] || S.peeked[l.id] ? 'Show it?' : 'Reveal? This lesson then pays half XP.'} <button class="tbtn" type="button" id="sol-yes">Reveal</button><button class="tbtn" type="button" id="sol-no">Not yet</button></span>`;
+    $('#sol-no').onclick = () => solZone(l);
+    $('#sol-yes').onclick = () => {
+      if (!S.done[l.id]) { S.peeked[l.id] = true; save(); }
+      $('#res').innerHTML = `<div class="task"><b class="t">Solution</b><pre class="cpre">${esc(l.solution)}</pre><div class="actions"><button class="btn" type="button" id="sol-use">Put it in the editor</button><button class="btn ghost" type="button" id="sol-hide">✕ Hide solution</button></div></div>`;
+      $('#sol-use').onclick = () => { $('#code').value = l.solution; $('#code').dispatchEvent(new Event('input')); $('#res').innerHTML = ''; $('#code').focus(); $('#code').scrollIntoView({ block:'center' }); };
+      $('#sol-hide').onclick = () => { $('#res').innerHTML = ''; $('#code').focus(); };
+      solZone(l);
+    };
+  };
+}
+function fail(l) { S.fails[l.id] = (S.fails[l.id] || 0) + 1; save(); solZone(l); }
+function win(l, cb, extra) {
+  const g = award(l);
+  $('#res').innerHTML = `<div class="banner win"><span>All checks passed${g ? ` · +${g} XP` : ''}</span>${nextBtn(l)}</div>`;
+  if (extra) cb.innerHTML += extra;
+  const h = $('.chal-head'); if (h && !h.querySelector('.donechip')) h.insertAdjacentHTML('beforeend', '<span class="donechip">✓ completed</span>');
+}
+function submitCode(l, code, cb) {
+  const n = normalize(code, l.lang);
+  const results = l.tests.map(t => { let ok = false; try { ok = !!t.t(n); } catch (e) {} return { ...t, ok }; });
+  const passed = results.filter(r => r.ok).length;
+  cb.innerHTML = results.map(r => `<div class="${r.ok ? 'pass' : 'fail'}">${r.ok ? '✓' : '✗'} ${esc(r.n)}</div>${r.ok ? '' : `<div class="hint">hint: ${esc(r.h)}</div>`}`).join('') +
+    `<div class="info">${passed} / ${results.length} checks passed</div>`;
+  if (passed === results.length) win(l, cb, l.out ? `<div class="info" style="margin-top:6px">program output (simulated):</div>` + l.out.map(o => `<div class="out">${esc(o)}</div>`).join('') : '');
+  else { $('#res').innerHTML = `<div class="banner lose">${results.length - passed} check${results.length - passed === 1 ? '' : 's'} failing. Read the hints.</div>`; fail(l); }
+}
+function submitSql(l, sql, cb) {
+  if (!SQLJS) { cb.innerHTML = '<div class="fail">SQL engine is not ready yet.</div>'; return; }
+  let lines = [], ok = true, db = null;
+  try {
+    db = freshDb();
+    const res = runAll(db, sql);
+    if (l.expect) {
+      const mine = [...res].reverse().find(r => r.cols), want = withDb(d => runAll(d, l.expect)).pop();
+      if (!mine) { ok = false; lines.push(['fail', 'Your SQL has no SELECT result to check. End with a query.']); }
+      else {
+        const colsOk = mine.cols.length === want.cols.length && (!l.matchCols || mine.cols.every((h, k) => h.toLowerCase() === want.cols[k].toLowerCase()));
+        lines.push([colsOk ? 'pass' : 'fail', colsOk ? 'Right columns' : `Expected columns: ${want.cols.join(', ')} · got: ${mine.cols.join(', ')}`]);
+        const rowsOk = same(mine.rows, want.rows) || (!l.ordered && same([...mine.rows].map(String).sort(), [...want.rows].map(String).sort()));
+        lines.push([rowsOk ? 'pass' : 'fail', rowsOk ? `Right rows (${want.rows.length})` : `Expected ${want.rows.length} row(s), got ${mine.rows.length}${mine.rows.length === want.rows.length ? ' with different values or order' : ''}`]);
+        ok = colsOk && rowsOk;
+        cb.innerHTML = '<div class="info">your result:</div>' + table(mine);
+      }
+    }
+    if (l.verify) {
+      cb.innerHTML = res.map(r => r.cols ? table(r) : `<div class="out">› ${esc(r.sql.trim().slice(0, 80))} → ${r.affected} row(s) affected</div>`).join('');
+      for (const v of l.verify) {
+        const got = (db.exec(v.sql)[0]?.values) || [];
+        const good = same(got, v.rows); ok = ok && good;
+        lines.push([good ? 'pass' : 'fail', v.n + (good ? '' : ` · expected ${JSON.stringify(v.rows)}, found ${JSON.stringify(got)}`)]);
+      }
+    }
+  } catch (err) { ok = false; lines.push(['fail', sqlErrMsg(err)]); }
+  finally { try { db && db.close(); } catch (e) {} }
+  cb.innerHTML += lines.map(([k, t]) => `<div class="${k}">${k === 'pass' ? '✓' : '✗'} ${esc(t)}</div>`).join('');
+  if (ok) win(l, cb); else { $('#res').innerHTML = '<div class="banner lose">Not quite. Compare with the checks above.</div>'; fail(l); }
+}
+
+/* ---------- real JavaScript runner (kind: 'js') ---------- */
+// Runs learner code in a throwaway Web Worker (blob URL) with a 2 s infinite-loop guard.
+const WORKER_SRC = `
+self.onmessage = e => {
+  const { code, fn, cases } = e.data, logs = [];
+  const show = v => { try { return v === undefined ? 'undefined' : JSON.stringify(v); } catch (x) { return String(v); } };
+  const console = { log: (...a) => logs.push(a.map(x => typeof x === 'string' ? x : show(x)).join(' ')) };
+  let f;
+  try { f = new Function('console', code + '\\n;return typeof ' + fn + ' === "function" ? ' + fn + ' : undefined;')(console); }
+  catch (err) { self.postMessage({ compileError: String(err), logs }); return; }
+  if (!f) { self.postMessage({ compileError: 'No function named ' + fn + ' was found.', logs }); return; }
+  const results = cases.map(c => {
+    const args = JSON.parse(JSON.stringify(c.args));
+    try {
+      const got = f(...args), out = c.inPlace ? args[0] : got;
+      return { n: c.n, ok: JSON.stringify(out) === JSON.stringify(c.expect), got: show(out), expect: show(c.expect) };
+    } catch (err) { return { n: c.n, ok: false, got: 'threw ' + err, expect: show(c.expect) }; }
+  });
+  self.postMessage({ results, logs });
+};`;
+let workerUrl = null;
+function runJs(code, fn, cases, timeout = 2000) {
+  return new Promise(done => {
+    workerUrl ??= URL.createObjectURL(new Blob([WORKER_SRC], { type: 'text/javascript' }));
+    const w = new Worker(workerUrl);
+    const t = setTimeout(() => { w.terminate(); done({ timeout: true }); }, timeout);
+    w.onmessage = e => { clearTimeout(t); w.terminate(); done(e.data); };
+    w.onerror = e => { e.preventDefault(); clearTimeout(t); w.terminate(); done({ compileError: e.message }); };
+    w.postMessage({ code, fn, cases });
+  });
+}
+async function submitJs(l, code, cb) {
+  cb.innerHTML = '<div class="info">running…</div>';
+  const r = await runJs(code, l.fn, l.cases, l.timeout || 2000);
+  const logs = (r.logs || []).slice(0, 40).map(x => `<div class="out">${esc(x)}</div>`).join('');
+  if (r.timeout) { cb.innerHTML = '<div class="fail">✗ Took longer than 2 seconds. Probably an infinite loop. Check that your pointers move.</div>'; $('#res').innerHTML = '<div class="banner lose">Stopped: too slow.</div>'; fail(l); return; }
+  if (r.compileError) { cb.innerHTML = `<div class="fail">✗ ${esc(r.compileError)}</div>` + logs; $('#res').innerHTML = '<div class="banner lose">Your code didn\'t run. Fix the error above.</div>'; fail(l); return; }
+  const rules = (l.tests || []).map(t => { let ok = false; try { ok = !!t.t(normalize(code)); } catch (e) {} return { ...t, ok }; });
+  const lines = r.results.map(x => `<div class="${x.ok ? 'pass' : 'fail'}">${x.ok ? '✓' : '✗'} ${esc(x.n)}</div>${x.ok ? '' : `<div class="hint">expected ${esc(x.expect)} · got ${esc(x.got)}</div>`}`).join('') +
+    rules.map(x => `<div class="${x.ok ? 'pass' : 'fail'}">${x.ok ? '✓' : '✗'} ${esc(x.n)}</div>${x.ok ? '' : `<div class="hint">hint: ${esc(x.h)}</div>`}`).join('');
+  const passed = r.results.filter(x => x.ok).length + rules.filter(x => x.ok).length, total = r.results.length + rules.length;
+  cb.innerHTML = lines + `<div class="info">${passed} / ${total} checks passed</div>` + (logs ? '<div class="info" style="margin-top:6px">console.log output:</div>' + logs : '');
+  if (passed === total) win(l, cb); else { $('#res').innerHTML = `<div class="banner lose">${total - passed} failing. Compare expected vs got.</div>`; fail(l); }
+}
+
+/* ---------- attack sandbox ---------- */
+function attack(c, l) {
+  const a = l.attack;
+  c.innerHTML = head(l) + taskBox(l) + `<div class="atk"><label for="atk-in" class="hintk">email typed by the "user"</label><input type="text" id="atk-in" spellcheck="false" autocomplete="off">
+    <div class="glued" id="atk-sql"></div></div>
+    <div class="con"><div class="ch"><span>query result</span><span>SQLite in your browser</span></div><div class="cb" id="atk-out"></div></div><div id="res"></div>`;
+  const inp = $('#atk-in'); inp.value = S.code[l.id] ?? a.start;
+  const go = () => {
+    S.code[l.id] = inp.value; save();
+    $('#atk-sql').innerHTML = esc(a.pre) + `<span class="u">${esc(inp.value)}</span>` + esc(a.post);
+    if (!SQLJS) { $('#atk-out').innerHTML = `<div class="info">${sqlErr ? 'SQL engine failed to load.' : 'Loading SQL engine…'}</div>`; return; }
+    try {
+      const r = withDb(db => runAll(db, a.pre + inp.value + a.post)).find(x => x.cols);
+      $('#atk-out').innerHTML = r ? table(r) : '<div class="info">no result</div>';
+      if (r && r.rows.length === a.target) {
+        if (!S.done[l.id]) { const g = award(l); $('#res').innerHTML = `<div class="banner win"><span>Breached! Every student leaked · +${g} XP</span>${nextBtn(l)}</div>`; }
+        else $('#res').innerHTML = `<div class="banner win"><span>Breached. That's why we never glue input into SQL.</span>${nextBtn(l)}</div>`;
+      } else $('#res').innerHTML = r ? `<div class="hintk">${r.rows.length} of ${a.target} students returned.</div>` : '';
+    } catch (err) {
+      const oom = /Aborted|OOM|out of memory/i.test(err.message);
+      $('#atk-out').innerHTML = `<div class="fail">${esc(sqlErrMsg(err))}</div>` + (oom ? '' : '<div class="info">Your input broke the SQL. Close to an attack; keep the quotes balanced.</div>');
+      $('#res').innerHTML = '';
+    }
+  };
+  let wait = null;
+  inp.addEventListener('input', () => { clearTimeout(wait); wait = setTimeout(go, 150); });  // run once you pause typing
+  go();
+}
+
+/* ---------- boot ---------- */
+refresh();
+const fromHash = (location.hash || '').replace(/^#l/, '');
+openLesson(idx(fromHash) >= 0 ? fromHash : (S.cur || ALL[0].id));
+window.addEventListener('hashchange', () => { const h = location.hash.replace(/^#l/, ''); if (idx(h) >= 0 && h !== S.cur) openLesson(h); });
+</script>

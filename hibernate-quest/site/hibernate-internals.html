@@ -1,0 +1,915 @@
+<title>Hibernate Internals Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>/* Layout: one reading column (~70ch) that widens into full-width "lab benches" for each interactive part. */
+:root{
+  --bg:#F1F3F6; --surface:#FFFFFF; --sunk:#E7EBF0; --ink:#131B25; --muted:#576373; --line:#D3D9E1;
+  --c1:#4A54CF; --c2:#B8720C; --c3:#1F8A55; --c4:#CF3463; --c5:#0E7C8C; --c6:#8A3FB8;
+  --c1s:#E2E4FA; --c2s:#F6E7CF; --c3s:#D5EFE1; --c4s:#F9DAE3; --c5s:#D3EEF1; --c6s:#EEDFF8;
+  --code-bg:#F7F8FA; --tk-kw:#7A2FB8; --tk-str:#1F7A4A; --tk-com:#7A8594; --tk-num:#B35A00; --tk-fn:#2550C0; --tk-cls:#A0306A;
+  --f-display:'Familjen Grotesk','Segoe UI',system-ui,sans-serif;
+  --f-body:'Atkinson Hyperlegible','Segoe UI',system-ui,sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0C1117; --surface:#141B24; --sunk:#1B2430; --ink:#E4E9EF; --muted:#93A0AF; --line:#2A3441;
+  --c1:#8D95FF; --c2:#ECA944; --c3:#52C889; --c4:#FF6B93; --c5:#4FD0E0; --c6:#C99BFF;
+  --c1s:#232853; --c2s:#3B2C12; --c3s:#153626; --c4s:#431828; --c5s:#0F3439; --c6s:#33204A;
+  --code-bg:#10161E; --tk-kw:#C79BFF; --tk-str:#7FD6A2; --tk-com:#6F7C8C; --tk-num:#F2B266; --tk-fn:#86A9FF; --tk-cls:#F59BC6;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0C1117; --surface:#141B24; --sunk:#1B2430; --ink:#E4E9EF; --muted:#93A0AF; --line:#2A3441;
+  --c1:#8D95FF; --c2:#ECA944; --c3:#52C889; --c4:#FF6B93; --c5:#4FD0E0; --c6:#C99BFF;
+  --c1s:#232853; --c2s:#3B2C12; --c3s:#153626; --c4s:#431828; --c5s:#0F3439; --c6s:#33204A;
+  --code-bg:#10161E; --tk-kw:#C79BFF; --tk-str:#7FD6A2; --tk-com:#6F7C8C; --tk-num:#F2B266; --tk-fn:#86A9FF; --tk-cls:#F59BC6;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+.wrap{max-width:1120px;margin:0 auto}
+.prose{max-width:70ch}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.15;margin:0}
+h1{font-size:clamp(2.2rem,5.5vw,3.6rem);font-weight:700;letter-spacing:-.02em}
+h2{font-size:clamp(1.5rem,3.2vw,2rem);font-weight:700;letter-spacing:-.01em}
+h3{font-size:1.15rem;font-weight:600}
+p{margin:0}
+code,kbd{font-family:var(--f-mono);font-size:.86em}
+:not(pre)>code{background:var(--sunk);padding:.1em .35em;border-radius:4px}
+a{color:var(--c1)}
+section{padding-block:52px 8px;display:grid;gap:18px}
+.eyebrow{font-family:var(--f-mono);font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.lead{font-size:1.12rem;color:var(--muted)}
+.stack{display:grid;gap:14px}
+.note{font-size:.92rem;color:var(--muted)}
+
+header.hero{padding-block:52px 8px;display:grid;gap:22px}
+.hero h1 em{font-style:normal;color:var(--c1)}
+.strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:860px}
+.strip div{border-top:3px solid var(--line);padding-top:10px}
+.strip div:nth-child(1){border-color:var(--c1)} .strip div:nth-child(2){border-color:var(--c2)} .strip div:nth-child(3){border-color:var(--c3)}
+.strip b{font-family:var(--f-display);font-size:1.05rem;display:block}
+.strip span{color:var(--muted);font-size:.95rem}
+.toc{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:.95rem;padding:0;margin:0;list-style:none}
+.toc a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--line)}
+.toc a:hover{color:var(--ink);border-color:var(--ink)}
+.toc .lvl{font-family:var(--f-mono);font-size:.7rem;color:var(--muted);margin-right:4px}
+.series{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:.9rem;color:var(--muted)}
+.series .here{background:var(--ink);color:var(--bg);padding:4px 10px;border-radius:999px;font-weight:700}
+.series a{padding:4px 10px;border:1px solid var(--line);border-radius:999px;text-decoration:none;color:var(--ink)}
+
+.map{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:0;padding:16px 18px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.map dt{font-weight:700}
+.map dd{margin:0;color:var(--muted)}
+.map dd code{color:var(--ink)}
+@media (max-width:560px){.map{grid-template-columns:minmax(0,1fr)}.map dd{margin-bottom:6px}}
+
+button,select,input[type=text]{font:inherit;font-size:.92rem;color:var(--ink)}
+.btn{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;line-height:1.2}
+.btn:hover{border-color:var(--muted)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink);min-width:86px;justify-content:center}
+.btn.sm{padding:4px 9px;font-size:.82rem}
+.btn.on{border-color:var(--c1);background:var(--c1s)}
+.btn:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible,.mm-label:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+select,input[type=text]{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+
+.bench{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:grid;gap:16px;min-width:0}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.narr{background:var(--sunk);border-radius:10px;padding:12px 14px;min-height:3.2em}
+.narr b{font-family:var(--f-mono);font-weight:600}
+.narr .real{display:block;margin-top:6px;font-size:.88rem;color:var(--muted)}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+@media (max-width:820px){.two{grid-template-columns:minmax(0,1fr)}.strip{grid-template-columns:minmax(0,1fr)}}
+
+/* mermaid */
+.mer{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;overflow-x:auto}
+.mer pre.mermaid{margin:0;font-family:var(--f-mono);font-size:.8rem;background:none;text-align:center;color:var(--ink)}
+.mer .cap{font-size:.8rem;color:var(--muted);margin-top:6px}
+
+/* interactive mindmap */
+.mm{display:grid;gap:12px}
+.mm-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.mm-tree{overflow-x:auto;padding:6px 2px 10px}
+.mm-node{display:flex;align-items:center}
+.mm-kids{display:flex;flex-direction:column;position:relative;padding-left:18px}
+.mm-kids::before{content:"";position:absolute;left:0;top:50%;width:18px;border-top:2px solid var(--line)}
+.mm-kids>.mm-node{position:relative;padding:4px 0 4px 20px}
+.mm-kids>.mm-node::before{content:"";position:absolute;left:0;top:50%;width:20px;border-top:2px solid color-mix(in srgb,var(--c) 55%,var(--line))}
+.mm-kids>.mm-node::after{content:"";position:absolute;left:0;top:0;bottom:0;border-left:2px solid color-mix(in srgb,var(--c) 55%,var(--line))}
+.mm-kids>.mm-node:first-child::after{top:50%}
+.mm-kids>.mm-node:last-child::after{bottom:50%}
+.mm-kids>.mm-node:only-child::after{display:none}
+.mm-node.closed>.mm-kids{display:none}
+.mm-label{flex:none;max-width:230px;text-align:left;border:2px solid var(--c);background:color-mix(in srgb,var(--c) 12%,var(--surface));color:var(--ink);border-radius:999px;padding:5px 12px;cursor:pointer;font-weight:700;font-size:.88rem;line-height:1.25;display:inline-flex;gap:6px;align-items:center}
+.mm-node.lv0>.mm-label{font-family:var(--f-display);font-size:1.1rem;padding:10px 16px;border-radius:14px;background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.mm-node.lv2>.mm-label,.mm-node.lv3>.mm-label{font-weight:400;border-width:1.5px;background:var(--surface);border-radius:8px;font-size:.84rem}
+.mm-label.sel{box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 35%,transparent)}
+.mm-count{font-family:var(--f-mono);font-size:.7rem;background:var(--c);color:var(--surface);border-radius:999px;padding:0 6px;display:none}
+.mm-node.closed>.mm-label .mm-count{display:inline}
+.mm-detail{border-left:4px solid var(--c,var(--c1));background:var(--sunk);border-radius:0 10px 10px 0;padding:12px 14px;min-height:4em}
+.mm-detail b{font-family:var(--f-display);font-size:1.05rem;display:block;margin-bottom:2px}
+.mm-detail .path{font-family:var(--f-mono);font-size:.72rem;color:var(--muted);display:block;margin-bottom:4px}
+
+/* journey lane */
+.lane{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;align-items:stretch}
+.stop{border:2px solid var(--line);border-radius:12px;padding:10px 8px;text-align:center;display:grid;gap:4px;align-content:start;transition:all .25s;background:var(--bg)}
+.stop b{font-family:var(--f-display);font-size:.95rem}
+.stop small{color:var(--muted);font-size:.74rem;line-height:1.3}
+.stop.on{border-color:var(--c4);background:var(--c4s);transform:translateY(-3px)}
+.stop.done{border-color:var(--c3)}
+.pkt{min-height:2.2em;text-align:center;font-family:var(--f-mono);font-size:.78rem;color:var(--c4);font-weight:600}
+@media (max-width:640px){.lane{grid-template-columns:minmax(0,1fr)}.stop.on{transform:none}}
+
+/* url decoder */
+.url{font-family:var(--f-mono);font-size:clamp(.85rem,2.6vw,1.15rem);display:flex;flex-wrap:wrap;gap:2px;overflow-x:auto}
+.url button{font-family:var(--f-mono);font-size:inherit;border:none;border-bottom:3px solid var(--c);background:color-mix(in srgb,var(--c) 10%,transparent);color:var(--ink);padding:4px 3px;cursor:pointer;border-radius:4px 4px 0 0}
+.url button.sel{background:color-mix(in srgb,var(--c) 28%,transparent)}
+.url .sep{padding:4px 0;color:var(--muted)}
+
+/* cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.card{border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:6px;background:var(--surface);align-content:start}
+.card b{font-family:var(--f-display);font-size:1.05rem}
+.card .what{font-size:.8rem;font-family:var(--f-mono);color:var(--muted)}
+.card p{font-size:.95rem;color:var(--muted)}
+
+/* game */
+.game{display:grid;gap:10px}
+.qrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.qrow code{font-size:.82rem;white-space:normal;word-break:break-word}
+.qrow .opts{display:flex;gap:6px;flex-wrap:wrap}
+.qrow .fb{grid-column:1/-1;font-size:.9rem}
+.qrow.right{border-color:var(--c3);background:var(--c3s)}
+.qrow.wrong{border-color:var(--c4);background:var(--c4s)}
+@media (max-width:640px){.qrow{grid-template-columns:minmax(0,1fr)}}
+.score{font-family:var(--f-mono);font-size:.85rem;color:var(--muted)}
+
+/* resultset */
+.rs{width:100%;border-collapse:collapse;font-family:var(--f-mono);font-size:.84rem}
+.rs th,.rs td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
+.rs th{color:var(--muted);font-weight:600}
+.rs td.cur{width:4.5em;color:var(--c4);font-weight:700}
+.rs tr.on td{background:var(--c4s)}
+.rs tr.read td{color:var(--muted)}
+.rs tr.before td{color:var(--c4);font-weight:700}
+.objs{display:flex;flex-wrap:wrap;gap:8px;min-height:44px}
+.obj{border:1.5px solid var(--c3);background:var(--c3s);border-radius:8px;padding:5px 9px;font-family:var(--f-mono);font-size:.76rem;animation:pop .3s ease}
+.obj.warn{border-color:var(--c4);background:var(--c4s)}
+@keyframes pop{from{transform:scale(.8);opacity:.3}to{transform:none;opacity:1}}
+.pc{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:10px 0;font-family:var(--f-mono);font-size:.8rem;line-height:1.55;overflow-x:auto}
+.pc div{padding:0 12px;white-space:pre;border-left:3px solid transparent}
+.pc div.on{background:var(--c4s);border-left-color:var(--c4)}
+.pc .c{color:var(--tk-com)}
+
+/* injection lab */
+.sql{font-family:var(--f-mono);font-size:.86rem;background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;white-space:pre-wrap;word-break:break-word;line-height:1.7}
+.sql .u{background:var(--c3s);border-radius:3px}
+.sql .x{background:var(--c4);color:var(--surface);border-radius:3px}
+.sql .q{color:var(--c1);font-weight:700}
+.verdict{font-weight:700}
+.ok{color:var(--c3)} .bad{color:var(--c4)}
+
+/* tabs + code */
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.tab{background:none;border:none;border-bottom:2px solid transparent;padding:8px 12px;cursor:pointer;color:var(--muted);font-weight:700}
+.tab[aria-selected="true"]{color:var(--ink);border-color:var(--c1)}
+pre.code{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;margin:0;font-family:var(--f-mono);font-size:.8rem;line-height:1.6;color:var(--ink)}
+pre.code code{font-size:inherit;background:none;padding:0}
+.token.keyword,.token.boolean{color:var(--tk-kw)}
+.token.string,.token.char,.token.attr-value{color:var(--tk-str)}
+.token.comment{color:var(--tk-com);font-style:italic}
+.token.number{color:var(--tk-num)}
+.token.function{color:var(--tk-fn)}
+.token.class-name,.token.tag{color:var(--tk-cls)}
+.token.operator,.token.punctuation{color:var(--muted)}
+.gets{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.92rem}
+.gets b{font-family:var(--f-mono);font-size:.85rem}
+
+/* nesting */
+.nest{display:grid;gap:0}
+.box{border:2px dashed var(--line);border-radius:12px;padding:10px 12px 12px;display:grid;gap:8px;transition:all .25s;color:var(--muted)}
+.box>.lab{font-family:var(--f-mono);font-size:.8rem;font-weight:600;display:flex;justify-content:space-between;gap:8px}
+.box.open{border-style:solid;color:var(--ink)}
+.box.b1.open{border-color:var(--c1);background:var(--c1s)}
+.box.b2.open{border-color:var(--c2);background:var(--c2s)}
+.box.b3.open{border-color:var(--c3);background:var(--c3s)}
+.box.closing{border-color:var(--c4)!important;background:var(--c4s)!important}
+
+/* troubleshooter */
+.errs{display:flex;flex-wrap:wrap;gap:8px}
+.errs button{font-family:var(--f-mono);font-size:.78rem;text-align:left}
+.fix ol{margin:6px 0 0;padding-left:1.3em;display:grid;gap:4px}
+
+details.setup{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:12px 16px}
+details.setup summary{cursor:pointer;font-weight:700}
+details.setup[open] summary{margin-bottom:10px}
+
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table.cmp{border-collapse:collapse;width:100%;min-width:640px;font-size:.92rem}
+table.cmp th,table.cmp td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+table.cmp th{font-family:var(--f-display);background:var(--sunk)}
+table.cmp tr:last-child td{border-bottom:none}
+
+.gotcha{border:2px solid var(--c4);border-radius:14px;padding:20px;background:var(--surface);display:grid;gap:14px}
+.vs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.vs>div{min-width:0}
+@media (max-width:720px){.vs{grid-template-columns:minmax(0,1fr)}}
+.vs .tag{font-family:var(--f-mono);font-size:.74rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.traps{display:grid;gap:10px;margin:0;padding-left:1.2em}
+
+details.q{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px}
+details.q summary{cursor:pointer;font-weight:700}
+details.q[open] summary{margin-bottom:8px}
+details.q p{color:var(--muted)}
+.next{display:flex;justify-content:flex-end;padding-top:30px}
+.next a{font-family:var(--f-display);font-size:1.2rem;font-weight:700;text-decoration:none;border:2px solid var(--ink);color:var(--ink);padding:12px 18px;border-radius:12px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+/* page-2 extras */
+.codecmp{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:14px}
+@media (max-width:860px){.codecmp{grid-template-columns:minmax(0,1fr)}}
+.lines{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:10px 0;font-family:var(--f-mono);font-size:.78rem;line-height:1.6;overflow-x:auto}
+.lines div{padding:0 12px;white-space:pre;border-left:3px solid transparent;transition:background .2s}
+.lines.hl div.b{background:var(--c4s);border-left-color:var(--c4);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--c4) 60%,transparent)}
+.lines.hl div.v{background:var(--c2s);border-left-color:var(--c2)}
+.lines.hl div.m{background:var(--c3s);border-left-color:var(--c3)}
+.lines .ttl{font-family:var(--f-body);font-weight:700;padding-bottom:6px;color:var(--muted);white-space:normal}
+.who{display:grid;gap:8px}
+.who .qrow{grid-template-columns:minmax(0,1fr) auto}
+.who .qrow span{font-weight:700}
+.pool{display:grid;gap:14px}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.slot{border:2px solid var(--c3);background:var(--c3s);border-radius:10px;padding:8px 10px;font-size:.82rem;display:grid;gap:4px;min-height:64px}
+.slot b{font-family:var(--f-mono);font-size:.78rem}
+.slot.busy{border-color:var(--c1);background:var(--c1s)}
+.slot.opening{border-color:var(--c2);background:var(--c2s)}
+.slot .bar{height:5px;background:var(--line);border-radius:3px;overflow:hidden}
+.slot .bar i{display:block;height:100%;background:var(--c1)}
+.slot.opening .bar i{background:var(--c2)}
+.queue{display:flex;flex-wrap:wrap;gap:6px;min-height:40px;align-items:center}
+.qchip{border:1.5px solid var(--c2);background:var(--c2s);border-radius:8px;padding:4px 8px;font-family:var(--f-mono);font-size:.74rem;display:grid;gap:3px;min-width:96px}
+.qchip .bar{height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.qchip .bar i{display:block;height:100%;background:var(--c4)}
+.log{font-family:var(--f-mono);font-size:.76rem;display:grid;gap:2px;max-height:150px;overflow:auto}
+.stats4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;text-align:center}
+@media (max-width:600px){.stats4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stats4 div{border:1px solid var(--line);border-radius:10px;padding:8px}
+.stats4 b{display:block;font-family:var(--f-display);font-size:1.4rem;font-variant-numeric:tabular-nums}
+.stats4 span{font-size:.74rem;color:var(--muted)}
+.grid33{display:grid;grid-template-columns:auto repeat(3,minmax(0,1fr));gap:6px;font-size:.86rem}
+.grid33 .h{font-weight:700;font-family:var(--f-display);padding:6px;text-align:center}
+.grid33 .rh{font-family:var(--f-mono);font-size:.8rem;font-weight:600;padding:6px;align-self:center}
+.grid33 button{border:1.5px solid var(--line);border-radius:8px;background:var(--bg);padding:8px 6px;cursor:pointer;font-family:var(--f-mono);font-size:.76rem;color:var(--ink);text-align:center;line-height:1.3}
+.grid33 button.good{border-color:var(--c3);background:var(--c3s)}
+.grid33 button.boom{border-color:var(--c4);background:var(--c4s)}
+.grid33 button.sel{box-shadow:0 0 0 3px color-mix(in srgb,var(--c1) 40%,transparent)}
+@media (max-width:560px){.grid33{grid-template-columns:minmax(0,1fr) repeat(3,minmax(0,1fr));font-size:.78rem}.grid33 button{font-size:.68rem}}
+.conv{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:12px;align-items:center}
+@media (max-width:700px){.conv{grid-template-columns:minmax(0,1fr)}}
+.mapper{border:2px solid var(--c6);background:var(--c6s);border-radius:14px;padding:12px 14px;text-align:center;font-family:var(--f-mono);font-size:.8rem;display:grid;gap:4px}
+.mapper b{font-family:var(--f-display);font-size:1rem}
+.mapper.on{box-shadow:0 0 0 4px color-mix(in srgb,var(--c6) 30%,transparent)}
+.alarm{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:760px){.alarm{grid-template-columns:minmax(0,1fr)}}
+.alarm>div{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:4px;align-content:start;min-width:0}
+.alarm .k{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.alarm code{white-space:normal;word-break:break-word}
+.alarm .spring{border-color:var(--c3);background:var(--c3s)}
+.alarm .raw{border-color:var(--c2);background:var(--c2s)}
+.timeline{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.timeline li{display:grid;grid-template-columns:86px minmax(0,1fr);gap:10px;align-items:center;padding:6px 10px;border-radius:8px;border:1px solid transparent;color:var(--muted);transition:all .2s}
+.timeline li.done{color:var(--ink)}
+.timeline li.on{border-color:var(--c4);background:var(--c4s);color:var(--ink)}
+.actor{font-family:var(--f-mono);font-size:.7rem;font-weight:600;text-align:center;border-radius:999px;padding:2px 6px;border:1.5px solid var(--c)}
+.conv-in{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-family:var(--f-mono)}
+/* hibernate-series extras */
+.log2{font-family:var(--f-mono);font-size:.78rem;background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:3px;max-height:260px;overflow:auto;min-height:60px}
+.log2 .s{color:var(--c5)} .log2 .e{color:var(--c4);font-weight:700} .log2 .i{color:var(--muted)} .log2 .g{color:var(--c3)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.ent{border:2px solid var(--c);background:color-mix(in srgb,var(--c) 12%,var(--surface));border-radius:10px;padding:8px 10px;font-family:var(--f-mono);font-size:.78rem;display:grid;gap:2px;min-width:120px}
+.ent b{font-family:var(--f-display);font-size:.9rem}
+.state{font-family:var(--f-mono);font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:2px 8px;border:1.5px solid var(--c);color:var(--c);display:inline-block}
+.dbt{border-collapse:collapse;font-family:var(--f-mono);font-size:.78rem;width:100%}
+.dbt caption{text-align:left;font-family:var(--f-display);font-weight:700;font-size:.9rem;padding-bottom:4px}
+.dbt th,.dbt td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+.dbt th{background:var(--sunk);color:var(--muted)}
+.dbt tr.new td{background:var(--c3s)} .dbt tr.chg td{background:var(--c2s)} .dbt tr.del td{background:var(--c4s);text-decoration:line-through}
+.dbt td.hl,.dbt th.hl{background:var(--c1s);outline:2px solid var(--c1)}
+.tw{overflow-x:auto}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.meter{height:14px;background:var(--sunk);border-radius:7px;overflow:hidden;border:1px solid var(--line)}
+.meter i{display:block;height:100%;background:var(--c2);transition:width .2s}
+.big{font-family:var(--f-display);font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums}
+.pill{font-family:var(--f-mono);font-size:.74rem;border-radius:999px;padding:2px 8px;background:var(--sunk)}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-family:var(--f-mono);font-size:.8rem}
+.flow span{border:1.5px solid var(--line);border-radius:8px;padding:5px 9px;background:var(--bg)}
+.flow span.on{border-color:var(--c4);background:var(--c4s)}
+.flow i{font-style:normal;color:var(--muted)}
+input[type=number]{font:inherit;font-size:.92rem;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 8px;width:6.5em;color:var(--ink)}
+label.ck{display:inline-flex;gap:6px;align-items:center;font-size:.92rem;cursor:pointer}
+.practice{display:flex;justify-content:center;padding-top:22px}
+.practice a{font-family:var(--f-display);font-weight:700;font-size:1.1rem;text-decoration:none;background:var(--ink);color:var(--bg);padding:12px 20px;border-radius:12px}
+section>*,.two>*,.grid2>*,.bench>*,.stack>*{min-width:0}
+:not(pre)>code{overflow-wrap:anywhere}
+</style>
+<div class="wrap">
+
+<header class="hero">
+  <div class="series"><a href="hibernate-intro.html">1 · Hibernate intro</a><span class="here">2 · Internals</span><a href="jpa-relationships.html">3 · Relationships</a><a href="jpa-fetching.html">4 · Cascade &amp; N+1</a><a href="spring-data-jpa.html">5 · Spring Data JPA</a><a href="hibernate-quest.html" style="border-color:var(--c3);color:var(--c3);font-weight:700">⚔ Practice in Hibernate Quest</a></div>
+  <span class="eyebrow">Coder Army notes · interactive version · part 2 of 5</span>
+  <h1>Hibernate doesn't just write SQL. <em>It keeps a workbench.</em></h1>
+  <p class="lead prose">Inside a transaction, Hibernate keeps an in-memory workspace called the persistence context. It tracks the objects you load or create, notices what you change, and sends the SQL at the right moment. Once that clicks, "why did this UPDATE happen?" and "why didn't my change save?" stop being mysteries.</p>
+  <div class="strip">
+    <div><b>Persistence context</b><span>An in-memory desk of managed entities, one per transaction.</span></div>
+    <div><b>Lifecycle states</b><span>Transient → managed → detached or removed.</span></div>
+    <div><b>Dirty check, flush, commit</b><span>Changes are detected and sent as SQL, then the transaction commits.</span></div>
+  </div>
+  <ul class="toc">
+    <li><a href="#big"><span class="lvl">MAP</span>Big picture</a></li>
+    <li><a href="#analogy"><span class="lvl">BASIC</span>The workbench</a></li>
+    <li><a href="#components"><span class="lvl">BASIC</span>Components</a></li>
+    <li><a href="#pc"><span class="lvl">CORE</span>Persistence context</a></li>
+    <li><a href="#proxy"><span class="lvl">CORE</span>@PersistenceContext proxy</a></li>
+    <li><a href="#tx"><span class="lvl">CORE</span>Transactions</a></li>
+    <li><a href="#aop"><span class="lvl">CORE</span>@Transactional proxy</a></li>
+    <li><a href="#lifecycle"><span class="lvl">CORE</span>Lifecycle states</a></li>
+    <li><a href="#identity"><span class="lvl">CORE</span>Identity map</a></li>
+    <li><a href="#dirty"><span class="lvl">CORE</span>Dirty checking</a></li>
+    <li><a href="#flush"><span class="lvl">ADV</span>Flush vs commit</a></li>
+    <li><a href="#batch"><span class="lvl">ADV</span>Batch: flush + clear</a></li>
+    <li><a href="#cache"><span class="lvl">ADV</span>First-level cache</a></li>
+    <li><a href="#methods"><span class="lvl">REF</span>Method reference</a></li>
+    <li><a href="#gotcha"><span class="lvl">!</span>The gotcha</a></li>
+    <li><a href="#quiz"><span class="lvl">TEST</span>Quiz</a></li>
+  </ul>
+</header>
+
+<section id="big">
+  <span class="eyebrow">Big picture</span>
+  <h2>The whole topic on one map</h2>
+  <div class="bench"><div class="mm" id="mm-big"></div></div>
+</section>
+
+<section id="analogy">
+  <span class="eyebrow">The analogy</span>
+  <h2>A carpenter's workbench</h2>
+  <div class="prose stack">
+    <p>A carpenter takes pieces from the warehouse to the workbench. Before working, they photograph each piece. They sand, cut, paint, all on the bench, and nothing goes back to the warehouse after every stroke. At the end of the job they compare each piece with its photo and ship back only what changed. If the job is cancelled, the warehouse is left untouched.</p>
+  </div>
+  <dl class="map">
+    <dt>The workbench</dt><dd><b>Persistence context</b>: the in-memory area of managed entities</dd>
+    <dt>A piece on the bench</dt><dd>A <b>managed</b> entity</dd>
+    <dt>A piece set aside off the bench</dt><dd>A <b>detached</b> entity: still exists, nobody tracks it</dd>
+    <dt>The photo</dt><dd>The <b>snapshot</b> Hibernate compares against: <b>dirty checking</b></dd>
+    <dt>Shipping changed pieces back</dt><dd><b>Flush</b>: SQL sent to the database</dd>
+    <dt>The job is officially done</dt><dd><b>Commit</b>; cancelling the job is <b>rollback</b></dd>
+    <dt>The carpenter's hands</dt><dd>The <code>EntityManager</code>: how you act on the bench</dd>
+    <dt>The workshop that hires carpenters</dt><dd>The <code>EntityManagerFactory</code></dd>
+  </dl>
+</section>
+
+<section id="components">
+  <span class="eyebrow">Basic · the parts</span>
+  <h2>Four components, four lifetimes</h2>
+  <div class="tbl-wrap"><table class="cmp">
+    <tr><th>Component</th><th>Job</th><th>Lives for</th></tr>
+    <tr><td><code>EntityManagerFactory</code></td><td>Creates EntityManagers, holds shared ORM metadata. Expensive to build.</td><td>The whole application</td></tr>
+    <tr><td><code>EntityManager</code></td><td>Your operations on entities and the persistence context. Not thread-safe.</td><td>One unit of work / transaction</td></tr>
+    <tr><td>Persistence context</td><td>Stores and tracks managed entity instances</td><td>Usually one transaction</td></tr>
+    <tr><td>Database transaction</td><td>A group of operations that succeed or fail as one</td><td>One business operation</td></tr>
+  </table></div>
+  <div class="two">
+    <div class="mer"><pre class="mermaid">
+flowchart TB
+  F[EntityManagerFactory] -- creates --> E[EntityManager]
+  E -- interacts with --> P[Persistence Context]
+  P -- synchronizes through Hibernate --> D[(Database)]
+    </pre></div>
+    <div class="stack">
+      <p><b>JPA</b> defines <i>what</i> operations do. <b>Hibernate</b> does them: maps, generates SQL, talks JDBC, tracks state, dirty-checks, manages the context. <b>Spring Boot</b> wires it all together.</p>
+      <div class="tbl-wrap"><table class="cmp" style="min-width:0"><tr><th>JPA API</th><th>Hibernate native</th></tr><tr><td><code>EntityManagerFactory</code></td><td><code>SessionFactory</code> (extends it)</td></tr><tr><td><code>EntityManager</code></td><td><code>Session</code> (extends it)</td></tr></table></div>
+      <p class="note">Coding against JPA types keeps you mostly provider-independent.</p>
+    </div>
+  </div>
+</section>
+
+<section id="pc">
+  <span class="eyebrow">Core · the workspace</span>
+  <h2>What find() really does</h2>
+  <p class="prose">The persistence context is keyed by <b>(entity type, id)</b>. <code>find()</code> looks there first. On a miss it runs a SELECT, builds the object, puts it on the bench and starts managing it. The context gives you: identity, lifecycle state, automatic change detection, first-level cache, write-behind and synchronization.</p>
+  <div class="bench" id="pc-bench">
+    <div class="two"><div class="flow" id="pc-flow"></div><div class="stack"><div class="chips" id="pc-ctx"></div></div></div>
+    <div class="narr" id="pc-msg"></div>
+  </div>
+  <p class="prose"><code>EntityManager</code> is not just "a query runner". Every method touches the entity, the context, or the sync between context and database: <code>persist find remove flush detach clear refresh</code>.</p>
+</section>
+
+<section id="proxy">
+  <span class="eyebrow">Core · Spring injection</span>
+  <h2>One repository, many requests, many contexts</h2>
+  <p class="prose">Repositories are singletons, used by many threads at once. A real <code>EntityManager</code> isn't thread-safe. So <code>@PersistenceContext</code> injects a <b>shared proxy</b> that routes each call to the EntityManager of the <i>current transaction</i>.</p>
+  <pre class="code"><code class="language-java">@Repository
+public class StudentRepository {
+    @PersistenceContext
+    private EntityManager entityManager;   // actually a proxy, stable for the bean's life
+}</code></pre>
+  <div class="bench">
+    <div class="toolbar"><button class="btn sm" data-rq="A">Request A: find(Student, 1)</button><button class="btn sm" data-rq="B">Request B: find(Student, 1)</button><button class="btn sm" id="rq-end" type="button">End both transactions</button></div>
+    <div class="grid2" id="rq-view"></div>
+    <div class="narr" id="rq-msg">Fire requests A and B. Same repository bean, same proxy, different real EntityManagers.</div>
+  </div>
+</section>
+
+<section id="tx">
+  <span class="eyebrow">Core · transactions</span>
+  <h2>All or nothing</h2>
+  <p class="prose">A bank transfer is two UPDATEs. If the second fails after the first succeeded, money vanishes. A <b>transaction</b> makes them one unit: COMMIT both, or ROLLBACK both. The span between begin and finish is the <b>transaction boundary</b>. A <b>unit of work</b> is every persistence step one business operation needs (load, check rules, modify, detect, generate SQL, run, commit).</p>
+  <div class="bench">
+    <div class="toolbar"><label class="ck"><input type="checkbox" id="tx-on" checked> inside a transaction</label><label class="ck"><input type="checkbox" id="tx-fail"> 2nd UPDATE fails</label><button class="btn primary" id="tx-run" type="button">Transfer ₹100</button><button class="btn sm" id="tx-reset" type="button">↺</button></div>
+    <div class="two"><div class="tw"><table class="dbt" id="tx-db"></table></div><div class="log2" id="tx-log"></div></div>
+  </div>
+  <div class="tabs" data-tabs="tl"><button class="tab" data-t="db">Database</button><button class="tab" data-t="hb">Hibernate native</button><button class="tab" data-t="sp">Spring</button></div>
+  <div data-pane-of="tl" data-pane="db"><pre class="code"><code class="language-sql">BEGIN;
+UPDATE students SET email = 'new@email.com' WHERE id = 1;
+COMMIT;</code></pre></div>
+  <div data-pane-of="tl" data-pane="hb"><pre class="code"><code class="language-java">Session session = sessionFactory.openSession();
+Transaction transaction = session.beginTransaction();
+try {
+    session.persist(student);
+    transaction.commit();
+} catch (Exception exception) {
+    transaction.rollback();
+    throw exception;
+} finally {
+    session.close();
+}</code></pre></div>
+  <div data-pane-of="tl" data-pane="sp"><pre class="code"><code class="language-java">@Transactional      // begin → run → flush → commit, or rollback on exception
+public void createStudent(Student student) {
+    entityManager.persist(student);
+}</code></pre></div>
+  <p class="prose note">By default Spring rolls back on unchecked exceptions (<code>RuntimeException</code>, <code>Error</code>). For checked ones, configure <code>rollbackFor</code>.</p>
+</section>
+
+<section id="aop">
+  <span class="eyebrow">Core · how @Transactional works</span>
+  <h2>A proxy stands in front of your service</h2>
+  <p class="prose">Spring wraps the service in an <b>AOP proxy</b>. The proxy's <code>TransactionInterceptor</code> starts (or joins) a transaction, calls your method, then commits or rolls back. A call from one method to another <i>on the same object</i> skips the proxy: the <b>self-invocation</b> limitation.</p>
+  <div class="bench">
+    <div class="toolbar"><button class="btn sm on" id="ao-ext" type="button">Controller → service.update()</button><button class="btn sm" id="ao-self" type="button">service.helper() → this.update()</button></div>
+    <div class="flow" id="ao-flow"></div>
+    <div class="narr" id="ao-msg"></div>
+  </div>
+  <h3>Why transactions belong in the service</h3>
+  <pre class="code"><code class="language-java">@Transactional
+public void enrollStudent(Long studentId, Long courseId) {
+    Student student = studentRepository.findById(studentId);
+    Course course = courseRepository.findById(courseId);
+    enrollmentRepository.create(student, course);
+    paymentRepository.recordPayment(student, course);   // if this fails, enrollment must roll back too
+}</code></pre>
+  <p class="prose">Repository methods do one persistence action. The service method is the whole use case, so it decides what succeeds or fails together. Separate repository-level transactions could commit the enrollment and then fail the payment.</p>
+  <div class="tbl-wrap"><table class="cmp"><tr><th>Operation</th><th>Needs a transaction?</th><th>Purpose</th></tr>
+    <tr><td><code>find()</code></td><td>Not normally (without locking)</td><td>Load by primary key</td></tr>
+    <tr><td><code>persist()</code></td><td>Yes</td><td>Make new entity managed, schedule INSERT</td></tr>
+    <tr><td><code>merge()</code></td><td>Yes</td><td>Copy state into a managed instance</td></tr>
+    <tr><td><code>remove()</code></td><td>Yes</td><td>Mark managed entity for deletion</td></tr>
+    <tr><td><code>flush()</code></td><td>Yes</td><td>Send pending changes</td></tr>
+    <tr><td><code>refresh()</code></td><td>Yes, in normal usage</td><td>Reload state from the database</td></tr></table></div>
+</section>
+
+<section id="lifecycle">
+  <span class="eyebrow">Core · entity lifecycle</span>
+  <h2>Transient, managed, detached, removed</h2>
+  <p class="prose">Press the buttons on the student. Illegal moves explain themselves. Watch <code>contains()</code>, the database and the SQL log.</p>
+  <div class="bench">
+    <div class="toolbar" id="lc-btns"></div>
+    <div class="grid2">
+      <div class="stack"><div id="lc-objs" class="chips"></div><div class="tw"><table class="dbt" id="lc-db"></table></div></div>
+      <div class="log2" id="lc-log"></div>
+    </div>
+    <div class="narr" id="lc-msg"></div>
+  </div>
+  <div class="mer"><pre class="mermaid">
+stateDiagram-v2
+  [*] --> Transient: new Student()
+  Transient --> Managed: persist()
+  Managed --> Detached: detach() / clear() / context ends
+  Managed --> Removed: remove()
+  Detached --> Managed_copy: merge() returns a copy
+  Removed --> [*]: flush → DELETE
+  </pre><div class="cap">merge() returns a <i>different</i> managed instance; the detached object stays detached.</div></div>
+  <div class="tbl-wrap"><table class="cmp"><tr><th>Detached</th><th>Removed</th></tr>
+    <tr><td>Hibernate stopped managing it</td><td>Hibernate is managing its deletion</td></tr>
+    <tr><td>Its row should stay</td><td>Its row is scheduled for deletion</td></tr>
+    <tr><td>Later changes are not dirty-checked</td><td>Deletion is synchronized during flush</td></tr></table></div>
+</section>
+
+<section id="identity">
+  <span class="eyebrow">Core · identity map</span>
+  <h2>One row, one object (per context)</h2>
+  <p class="prose">Within one persistence context, a given (type, id) is represented by <b>one</b> managed Java object. So two <code>find(Student.class, 1L)</code> calls return the same reference: <code>first == second</code>. Without this rule, two objects for one row could hold conflicting values in the same unit of work.</p>
+  <pre class="code"><code class="language-java">Student first  = entityManager.find(Student.class, 1L);   // SELECT
+Student second = entityManager.find(Student.class, 1L);   // no SELECT
+first == second;              // true (same context)
+entityManager.contains(first) // true; after detach(first) → false</code></pre>
+</section>
+
+<section id="dirty">
+  <span class="eyebrow">Core · dirty checking</span>
+  <h2>No update() method, still an UPDATE</h2>
+  <p class="prose"><b>Dirty</b> just means "current state differs from the snapshot". A setter doesn't run SQL. At flush, Hibernate compares each managed entity with its snapshot and generates UPDATEs for the differences. JPA doesn't even define <code>EntityManager.update()</code>.</p>
+  <div class="bench">
+    <div class="toolbar"><input type="text" id="dc-in" value="Rohan" size="10"><button class="btn sm" id="dc-set" type="button">student.setName(…)</button><button class="btn sm" id="dc-det" type="button">detach(student)</button><button class="btn primary" id="dc-flush" type="button">flush (method returns)</button><button class="btn sm" id="dc-reset" type="button">↺ find() again</button></div>
+    <div class="grid2"><div class="ent" style="--c:var(--c5)" id="dc-snap"></div><div class="ent" style="--c:var(--c2)" id="dc-cur"></div></div>
+    <div class="log2" id="dc-log"></div>
+    <div class="narr" id="dc-msg"></div>
+  </div>
+</section>
+
+<section id="flush">
+  <span class="eyebrow">Advanced · flush vs commit</span>
+  <h2>Sending SQL isn't the same as finishing</h2>
+  <p class="prose"><b>Flush</b> sends pending SQL inside the current transaction; it can still be rolled back. <b>Commit</b> ends the transaction successfully and makes changes durable. With the default <code>AUTO</code> flush mode, Hibernate flushes before commit and before queries whose results pending changes could affect.</p>
+  <div class="bench" id="fl-bench">
+    <div class="toolbar"><label class="ck"><input type="checkbox" id="fl-err"> an error happens after flush</label></div>
+    <ol class="timeline" id="fl-list"></ol>
+    <div class="two"><div class="tw"><table class="dbt" id="fl-db"></table></div><div class="narr" id="fl-msg"></div></div>
+  </div>
+  <h3>Transactional write-behind</h3>
+  <p class="prose">Write-through would send SQL after every Java change. Hibernate is <b>write-behind</b>: changes collect in the context and go out at flush. That lets it skip useless work, order statements, group them and use JDBC batching, all still inside the transaction.</p>
+  <div class="bench">
+    <div class="toolbar"><button class="btn sm on" id="wb-b" type="button">write-behind</button><button class="btn sm" id="wb-t" type="button">write-through (imaginary)</button></div>
+    <div class="log2" id="wb-log"></div>
+  </div>
+  <p class="prose note">Manual <code>entityManager.flush()</code> is useful to hit a constraint violation early, to sync before later database work, or with <code>clear()</code> in batches.</p>
+</section>
+
+<section id="batch">
+  <span class="eyebrow">Advanced · batch processing</span>
+  <h2>100,000 inserts without running out of memory</h2>
+  <pre class="code"><code class="language-java">for (int i = 0; i &lt; 100_000; i++) {
+    entityManager.persist(createStudent(i));
+    if ((i + 1) % 100 == 0) {
+        entityManager.flush();   // send pending SQL; entities still managed
+        entityManager.clear();   // detach all; empty the context
+    }
+}</code></pre>
+  <div class="bench">
+    <div class="toolbar"><label class="ck">every <input type="number" id="bt-n" value="100" min="1"> rows</label><label class="ck"><input type="checkbox" id="bt-fl" checked> flush()</label><label class="ck"><input type="checkbox" id="bt-cl" checked> clear()</label><button class="btn primary" id="bt-run" type="button">▶ Run 100,000</button></div>
+    <div class="stats4"><div><b id="bt-i">0</b><span>persisted</span></div><div><b id="bt-m">0</b><span>managed right now</span></div><div><b id="bt-peak">0</b><span>peak managed</span></div><div><b id="bt-sql">0</b><span>INSERTs sent so far</span></div></div>
+    <div class="meter"><i id="bt-bar" style="width:0"></i></div>
+    <div class="narr" id="bt-msg">Try turning off clear().</div>
+  </div>
+</section>
+
+<section id="cache">
+  <span class="eyebrow">Advanced · first-level cache</span>
+  <h2>The bench is also a cache</h2>
+  <p class="prose">The persistence context <i>is</i> the first-level cache: on by default, can't be turned off, belongs to one context (one transaction in Spring), and guarantees identity. It is not application-wide.</p>
+  <div class="bench">
+    <div class="toolbar"><button class="btn sm" data-fc="1">find(Student, 1)</button><button class="btn sm" data-fc="2">find(Student, 2)</button><button class="btn sm" id="fc-q" type="button">JPQL: select s from Student s</button><button class="btn sm" id="fc-det" type="button">detach(student 1)</button><button class="btn sm" id="fc-clr" type="button">clear()</button><button class="btn sm" id="fc-ext" type="button">other process: name of 1 → Aman</button><button class="btn sm" id="fc-ref" type="button">refresh(student 1)</button><button class="btn sm" id="fc-tx" type="button">new transaction</button></div>
+    <div class="grid2"><div class="stack"><b>Persistence context <span class="pill" id="fc-txn"></span></b><div class="chips" id="fc-ctx"></div></div><div class="stack"><b>SELECTs sent: <span id="fc-n">0</span></b><div class="log2" id="fc-log"></div></div></div>
+  </div>
+  <ul class="traps prose">
+    <li><code>find()</code> by primary key can be served from the context. A <b>JPQL/Criteria query still runs SQL</b>; Hibernate then hands back the already-managed instances.</li>
+    <li>The cache can hold <b>stale</b> values if another transaction changes the row. <code>refresh()</code> reloads, and throws away unsynchronized in-memory changes, so use it on purpose.</li>
+    <li><code>detach(e)</code> affects one entity; <code>clear()</code> every entity. After <code>clear()</code>, <code>first == second</code> is false: first is the old detached object.</li>
+  </ul>
+</section>
+
+<section id="methods">
+  <span class="eyebrow">Reference</span>
+  <h2>EntityManager methods at a glance</h2>
+  <div class="tbl-wrap"><table class="cmp">
+    <tr><th>Method</th><th>Main effect</th></tr>
+    <tr><td><code>persist(entity)</code></td><td>New entity becomes managed; INSERT scheduled</td></tr>
+    <tr><td><code>find(Type.class, id)</code></td><td>Returns a managed entity (context first, then DB)</td></tr>
+    <tr><td><code>merge(entity)</code></td><td>Copies state into a managed instance and <b>returns it</b></td></tr>
+    <tr><td><code>remove(entity)</code></td><td>Marks a managed entity for deletion</td></tr>
+    <tr><td><code>contains(entity)</code></td><td>Is this instance managed?</td></tr>
+    <tr><td><code>detach(entity)</code> / <code>clear()</code></td><td>Detach one / all</td></tr>
+    <tr><td><code>flush()</code></td><td>Send pending changes (not commit)</td></tr>
+    <tr><td><code>refresh(entity)</code></td><td>Replace current state with database state</td></tr>
+  </table></div>
+  <h3>Myth or fact?</h3>
+  <div class="game" data-game>
+    <span class="score">0 / 8</span>
+    <div class="qrow" data-a="0" data-ex="new Student() is transient until persisted or loaded."><span>"An @Entity object is automatically managed."</span><div class="opts"><button class="btn sm">Myth</button><button class="btn sm">Fact</button></div><div class="fb"></div></div>
+    <div class="qrow" data-a="0" data-ex="The setter changes Java memory. The UPDATE comes at flush."><span>"Calling a setter immediately runs an UPDATE."</span><div class="opts"><button class="btn sm">Myth</button><button class="btn sm">Fact</button></div><div class="fb"></div></div>
+    <div class="qrow" data-a="0" data-ex="Managed = associated with the context. The INSERT may be delayed."><span>"Managed means the SQL already ran."</span><div class="opts"><button class="btn sm">Myth</button><button class="btn sm">Fact</button></div><div class="fb"></div></div>
+    <div class="qrow" data-a="0" data-ex="Flush sends SQL; commit ends the transaction."><span>"flush() and commit() are the same."</span><div class="opts"><button class="btn sm">Myth</button><button class="btn sm">Fact</button></div><div class="fb"></div></div>
+    <div class="qrow" data-a="0" data-ex="detach only stops tracking. remove deletes."><span>"detach() deletes the row."</span><div class="opts"><button class="btn sm">Myth</button><button class="btn sm">Fact</button></div><div class="fb"></div></div>
+    <div class="qrow" data-a="0" data-ex="merge returns a managed copy; the argument stays detached."><span>"merge() makes the same detached object managed."</span><div class="opts"><button class="btn sm">Myth</button><button class="btn sm">Fact</button></div><div class="fb"></div></div>
+    <div class="qrow" data-a="0" data-ex="It belongs to one persistence context."><span>"The first-level cache is shared across the app."</span><div class="opts"><button class="btn sm">Myth</button><button class="btn sm">Fact</button></div><div class="fb"></div></div>
+    <div class="qrow" data-a="1" data-ex="Two find() calls for the same id in one context return the same object."><span>"In one context, find(Student,1) twice gives first == second."</span><div class="opts"><button class="btn sm">Myth</button><button class="btn sm">Fact</button></div><div class="fb"></div></div>
+  </div>
+</section>
+
+<section id="gotcha">
+  <span class="eyebrow">The gotcha</span>
+  <div class="gotcha">
+    <h2>Using the argument of merge() instead of its return value</h2>
+    <p class="prose">merge() copies the detached object's state into a managed instance and returns that instance. The object you passed in is still detached. Changes made to it after the merge are lost.</p>
+    <div class="vs">
+      <div><div class="tag bad">✗ Change is lost</div><pre class="code"><code class="language-java">entityManager.merge(detached);
+detached.setName("Rohan");   // detached: not tracked</code></pre></div>
+      <div><div class="tag ok">✓ Use the managed copy</div><pre class="code"><code class="language-java">Student managed = entityManager.merge(detached);
+managed.setName("Rohan");    // dirty-checked → UPDATE</code></pre></div>
+    </div>
+    <ul class="traps">
+      <li><b>Changes after detach/clear aren't saved.</b> Dirty checking only sees managed entities.</li>
+      <li><b>Self-invocation skips @Transactional.</b> <code>this.update()</code> bypasses the proxy.</li>
+      <li><b>flush() is not durable.</b> A later exception still rolls back what was flushed.</li>
+      <li><b>Setting the same value</b> (<code>setName("Rahul")</code> when it's already Rahul) normally produces no UPDATE.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="quiz">
+  <span class="eyebrow">Recall</span>
+  <h2>Answer out loud before opening</h2>
+  <details class="q"><summary>1. Why does Spring inject a proxy for EntityManager?</summary><p>Repositories are singletons shared by threads; a real EntityManager isn't thread-safe. The proxy routes each call to the EntityManager bound to the current transaction.</p></details>
+  <details class="q"><summary>2. Name the four lifecycle states and one way into each.</summary><p>Transient (<code>new</code>), managed (<code>persist</code>/<code>find</code>), detached (<code>detach</code>/<code>clear</code>/context ends), removed (<code>remove</code>).</p></details>
+  <details class="q"><summary>3. Predict: find(1), setName("Rohan"), method returns. Which SQL?</summary><p>SELECT at find, then at flush before commit: <code>UPDATE students SET name='Rohan' WHERE id=?</code>.</p></details>
+  <details class="q"><summary>4. Predict: find(1), detach, setName("Rohan"), method returns.</summary><p>Just the SELECT. The entity is detached, so no dirty checking, no UPDATE.</p></details>
+  <details class="q"><summary>5. flush vs commit?</summary><p>Flush sends SQL inside the transaction (can roll back). Commit finishes the transaction; changes become durable.</p></details>
+  <details class="q"><summary>6. Why flush() and clear() every 100 rows in a batch?</summary><p>flush sends the pending inserts; clear detaches them so the context doesn't grow to 100,000 managed objects.</p></details>
+  <details class="q"><summary>7. find(1) in methodA and again in a separate @Transactional methodB. How many SELECTs?</summary><p>Two. Each transaction has its own persistence context, so its own first-level cache.</p></details>
+  <details class="q"><summary>8. Why put @Transactional on the service, not each repository method?</summary><p>The service method is the whole business operation; all its repository calls must succeed or fail together.</p></details>
+  <div class="practice"><a href="hibernate-quest.html#l2-1">Practice this in Hibernate Quest →</a></div>
+  <div class="next"><a href="jpa-relationships.html">Next: JPA relationships →</a></div>
+</section>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const BR = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--c6)'];
+/* ---------- reusable: clickable mindmap ---------- */
+function mindmap(el, data, openDepth = 1){
+  el.innerHTML = `<div class="mm-tools"><button class="btn sm" type="button" data-a="open">Expand all</button><button class="btn sm" type="button" data-a="close">Fold to main branches</button></div><div class="mm-tree"></div><div class="mm-detail"></div>`;
+  const tree = el.querySelector('.mm-tree'), det = el.querySelector('.mm-detail');
+  let sel = null;
+  function show(node, path, color, btn){
+    if(sel) sel.classList.remove('sel'); sel = btn; btn.classList.add('sel');
+    det.style.setProperty('--c', color);
+    det.innerHTML = `<span class="path">${esc(path.join('  ›  '))}</span><b>${esc(node.t)}</b>${node.d || ''}`;
+  }
+  function build(node, level, color, path){
+    const w = document.createElement('div');
+    w.className = 'mm-node lv' + Math.min(level, 3);
+    w.style.setProperty('--c', color);
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'mm-label';
+    b.innerHTML = esc(node.t) + (node.c ? `<span class="mm-count">+${node.c.length}</span>` : '');
+    w.append(b);
+    const p = path.concat(node.t);
+    if(node.c){
+      const k = document.createElement('div'); k.className = 'mm-kids';
+      node.c.forEach((ch, i) => k.append(build(ch, level + 1, level === 0 ? BR[i % BR.length] : color, p)));
+      w.append(k);
+      if(level >= openDepth) w.classList.add('closed');
+    }
+    b.onclick = () => {
+      if(node.c && level > 0){
+        if(w.classList.contains('closed')) w.classList.remove('closed');
+        else if(sel === b) w.classList.add('closed');
+      }
+      show(node, p, color, b);
+    };
+    if(level === 0) setTimeout(() => show(node, p, 'var(--ink)', b));
+    return w;
+  }
+  tree.append(build(data, 0, 'var(--ink)', []));
+  el.querySelector('[data-a=open]').onclick = () => tree.querySelectorAll('.mm-node').forEach(n => n.classList.remove('closed'));
+  el.querySelector('[data-a=close]').onclick = () => tree.querySelectorAll('.mm-node.lv1').forEach(n => n.classList.add('closed'));
+}
+
+/* ---------- reusable: stepper ---------- */
+function stepper(root, frames, render, delay = 1600){
+  const bar = document.createElement('div'); bar.className = 'toolbar';
+  bar.innerHTML = `<button class="btn" type="button" data-a="back">◀ Back</button><button class="btn primary" type="button" data-a="next">Next ▶</button><button class="btn" type="button" data-a="play">▶ Play</button><button class="btn" type="button" data-a="reset">↺ Restart</button><span class="score" data-a="n"></span>`;
+  root.prepend(bar);
+  const st = { i:0, t:null, frames };
+  const draw = () => {
+    render(st.frames[st.i], st.i);
+    bar.querySelector('[data-a=n]').textContent = `step ${st.i + 1} / ${st.frames.length}`;
+    bar.querySelector('[data-a=next]').disabled = st.i >= st.frames.length - 1;
+    bar.querySelector('[data-a=back]').disabled = st.i === 0;
+    bar.querySelector('[data-a=play]').textContent = st.t ? '⏸ Pause' : '▶ Play';
+  };
+  const stop = () => { clearTimeout(st.t); st.t = null; };
+  const tick = () => { if(st.i < st.frames.length - 1){ st.i++; st.t = setTimeout(tick, delay); } else stop(); draw(); };
+  bar.onclick = e => {
+    const a = e.target.closest('button')?.dataset.a; if(!a) return;
+    if(a === 'next'){ stop(); st.i = Math.min(st.frames.length - 1, st.i + 1); }
+    if(a === 'back'){ stop(); st.i = Math.max(0, st.i - 1); }
+    if(a === 'reset'){ stop(); st.i = 0; }
+    if(a === 'play'){ if(st.t) stop(); else { if(st.i >= st.frames.length - 1) st.i = 0; st.t = setTimeout(tick, 250); } }
+    draw();
+  };
+  draw();
+  return { reload(f){ stop(); st.frames = f; st.i = Math.min(st.i, f.length - 1); draw(); }, draw };
+}
+
+/* ---------- big mindmap ---------- */
+/* ---------- tabs: <div class="tabs" data-tabs="id"> buttons data-t="key"; panes [data-pane-of="id"][data-pane="key"] ---------- */
+document.querySelectorAll('[data-tabs]').forEach(tb => {
+  const id = tb.dataset.tabs;
+  const sel = k => { tb.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.t === k));
+    document.querySelectorAll(`[data-pane-of="${id}"]`).forEach(p => p.hidden = p.dataset.pane !== k); };
+  tb.onclick = e => { const b = e.target.closest('.tab'); if(b) sel(b.dataset.t); };
+  sel(tb.querySelector('.tab').dataset.t);
+});
+/* ---------- tiny log helper ---------- */
+function logger(el){ return { clear(){ el.innerHTML=''; }, add(cls, html){ const d=document.createElement('div'); d.className=cls; d.innerHTML=html; el.append(d); el.scrollTop=el.scrollHeight; } }; }
+/* ---------- quick quiz rows: <div class="game" data-game> with .qrow[data-a="idx"] containing .opts buttons ---------- */
+document.querySelectorAll('[data-game]').forEach(g => {
+  const sc = g.querySelector('.score'); let got = 0, tot = g.querySelectorAll('.qrow').length;
+  g.querySelectorAll('.qrow').forEach(r => r.querySelectorAll('.opts button').forEach((b, i) => b.onclick = () => {
+    if(r.dataset.done) return; r.dataset.done = 1; const ok = i === +r.dataset.a; if(ok) got++;
+    r.classList.add(ok ? 'right' : 'wrong'); r.querySelector('.fb').innerHTML = (ok ? '✓ ' : '✗ ') + r.dataset.ex;
+    if(sc) sc.textContent = `${got} / ${tot} right`; }));
+});
+
+mindmap($('#mm-big'), {t:'Hibernate internals', d:'Hibernate manages entity state in a persistence context and synchronizes it with the database within a transaction.', c:[
+  {t:'Components', d:'Factory (app-wide) → EntityManager (per unit of work) → persistence context → database.', c:[
+    {t:'EntityManagerFactory', d:'Expensive, shared, holds metadata. Hibernate: SessionFactory.'},
+    {t:'EntityManager', d:'Short-lived, not thread-safe. Hibernate: Session.'},
+    {t:'@PersistenceContext', d:'Spring injects a proxy that routes to the transaction\'s EntityManager.'}]},
+  {t:'Transactions', d:'All-or-nothing groups of SQL.', c:[
+    {t:'@Transactional', d:'AOP proxy: begin → run → flush → commit, or rollback.'},
+    {t:'Rollback rules', d:'Unchecked exceptions by default; checked via rollbackFor.'},
+    {t:'Service layer', d:'The business operation is the boundary.'},
+    {t:'Self-invocation', d:'this.method() bypasses the proxy.'}]},
+  {t:'Lifecycle', d:'Four states.', c:[
+    {t:'Transient', d:'new Student(): not tracked.'},
+    {t:'Managed', d:'persist()/find(). Tracked; SQL may not have run yet.'},
+    {t:'Detached', d:'detach/clear/context ends. Changes ignored.'},
+    {t:'Removed', d:'remove(): DELETE at flush.'},
+    {t:'merge()', d:'Returns a managed copy.'}]},
+  {t:'Change detection', d:'How UPDATEs appear without update().', c:[
+    {t:'Dirty checking', d:'Compare current state to snapshot at flush.'},
+    {t:'Flush', d:'Send pending SQL; AUTO before commit and some queries.'},
+    {t:'Write-behind', d:'Collect changes, send later, batched and ordered.'}]},
+  {t:'First-level cache', d:'The context itself, keyed by type + id.', c:[
+    {t:'Identity map', d:'One object per row per context: first == second.'},
+    {t:'Scope', d:'One context, usually one transaction.'},
+    {t:'Queries still run', d:'JPQL hits the DB; find() can be a cache hit.'},
+    {t:'refresh()', d:'Reload stale state from the DB.'}]}
+]});
+
+/* find flow */
+const PCF = [
+  {on:0, ctx:[], m:'<code>entityManager.find(Student.class, 1L)</code> is called. Key: <b>(Student, 1)</b>.'},
+  {on:1, ctx:[], m:'Look in the persistence context. Nothing for (Student, 1): a <b>miss</b>.'},
+  {on:2, ctx:[], m:'Hibernate runs <code>SELECT … FROM students WHERE id = 1</code>.'},
+  {on:3, ctx:[], m:'It builds a <code>Student{id=1, name="Rahul", email="rahul@gmail.com"}</code> from the row.'},
+  {on:4, ctx:['Student#1'], m:'The object is placed in the context with a snapshot of its state.'},
+  {on:5, ctx:['Student#1'], m:'It is now <b>managed</b>: identity, change detection and caching all apply.'}];
+const PCS = ['find()','check context','SELECT','build object','store + snapshot','managed'];
+stepper($('#pc-bench'), PCF, f => {
+  $('#pc-flow').innerHTML = PCS.map((s,i)=>`<span class="${i===f.on?'on':''}">${s}</span>`).join('<i>→</i>');
+  $('#pc-ctx').innerHTML = f.ctx.length ? f.ctx.map(c=>`<div class="ent" style="--c:var(--c3)"><b>${c}</b>name = Rahul<span class="state" style="--c:var(--c3)">managed</span></div>`).join('') : '<span class="note">Persistence context: empty</span>';
+  $('#pc-msg').innerHTML = f.m;
+}, 1600);
+
+/* proxy */
+let rq = {A:null, B:null};
+function rqDraw(){
+  $('#rq-view').innerHTML = ['A','B'].map(k=>`<div class="card"><b>Request ${k}</b><span class="what">StudentRepository (singleton) → EntityManager proxy</span>${rq[k]?`<p>→ Transaction ${k} → <b>EntityManager ${k}</b> → Persistence Context ${k}</p><div class="ent" style="--c:var(--c${k==='A'?1:2})"><b>Student#1</b>object @${rq[k]}</div>`:'<p class="note">idle</p>'}</div>`).join('');
+}
+document.querySelectorAll('[data-rq]').forEach(b=>b.onclick=()=>{ const k=b.dataset.rq; if(!rq[k]) rq[k]=(k==='A'?'1a2f':'7c90');
+  $('#rq-msg').innerHTML = rq.A&&rq.B ? 'Both requests loaded Student#1, but they hold <b>different objects</b> in <b>different contexts</b>. Nothing is shared between threads.' : `Request ${k} got its own transaction-bound EntityManager.`; rqDraw(); });
+$('#rq-end').onclick=()=>{ rq={A:null,B:null}; $('#rq-msg').innerHTML='Transactions ended; their contexts closed. The proxy stays.'; rqDraw(); }; rqDraw();
+
+/* transfer */
+let acct = {1:1000, 2:500}; const txl = logger($('#tx-log'));
+function txDraw(){ $('#tx-db').innerHTML = `<caption>accounts</caption><tr><th>id</th><th>balance</th></tr><tr><td>1</td><td>${acct[1]}</td></tr><tr><td>2</td><td>${acct[2]}</td></tr><tr><td>total</td><td><b>${acct[1]+acct[2]}</b></td></tr>`; }
+$('#tx-run').onclick=()=>{ const t=$('#tx-on').checked, f=$('#tx-fail').checked; const before={...acct}; txl.clear();
+  if(t) txl.add('g','BEGIN'); txl.add('s','UPDATE accounts SET balance = balance - 100 WHERE id = 1'); acct[1]-=100;
+  if(f){ txl.add('e','UPDATE accounts SET balance = balance + 100 WHERE id = 2  ← error');
+    if(t){ txl.add('g','ROLLBACK → both statements undone'); acct=before; } else txl.add('e','No transaction: the first UPDATE already stuck. ₹100 vanished.'); }
+  else { txl.add('s','UPDATE accounts SET balance = balance + 100 WHERE id = 2'); acct[2]+=100; if(t) txl.add('g','COMMIT'); }
+  txDraw(); };
+$('#tx-reset').onclick=()=>{ acct={1:1000,2:500}; txl.clear(); txDraw(); }; txDraw();
+
+/* aop */
+function ao(self){ $('#ao-ext').classList.toggle('on',!self); $('#ao-self').classList.toggle('on',self);
+  $('#ao-flow').innerHTML = self ? '<span>Controller</span><i>→</i><span>Proxy</span><i>→</i><span>helper() (no @Transactional)</span><i>→</i><span class="on">this.update()</span><i>→</i><span>no transaction started</span>'
+    : '<span>Controller</span><i>→</i><span class="on">StudentService proxy · TransactionInterceptor begins</span><i>→</i><span>updateStudent()</span><i>→</i><span>commit or rollback</span>';
+  $('#ao-msg').innerHTML = self ? '<span class="bad">The call stays inside the real object.</span> <code>this</code> is not the proxy, so the interceptor never runs and <code>@Transactional</code> on update() is ignored.' : 'The call enters through the proxy, so the interceptor creates or joins a transaction according to propagation rules.'; }
+$('#ao-ext').onclick=()=>ao(false); $('#ao-self').onclick=()=>ao(true); ao(false);
+
+/* lifecycle */
+let lc; const lcl = logger($('#lc-log'));
+function lcReset(){ lc = {obj:null, state:null, inDb:false, name:'Rahul', copy:null, pending:null}; lcl.clear(); lcl.add('i','Start with: new Student()'); lcDraw('Start by creating the object.'); }
+const LCB = ['new Student()','persist()','flush()','setName("Rohan")','detach()','merge()','remove()','context ends','contains()'];
+$('#lc-btns').innerHTML = LCB.map((b,i)=>`<button class="btn sm" data-i="${i}">${esc(b)}</button>`).join('') + '<button class="btn sm" data-b="reset">↺</button>';
+const SC = {transient:'var(--muted)', managed:'var(--c3)', detached:'var(--c2)', removed:'var(--c4)'};
+function lcDraw(m){
+  const o = [];
+  if(lc.state) o.push(`<div class="ent" style="--c:${SC[lc.state]}"><b>student</b>name = ${esc(lc.name)}<span class="state" style="--c:${SC[lc.state]}">${lc.state}</span></div>`);
+  if(lc.copy) o.push(`<div class="ent" style="--c:${SC[lc.copy.state]}"><b>managed (merge result)</b>name = ${esc(lc.copy.name)}<span class="state" style="--c:${SC[lc.copy.state]}">${lc.copy.state}</span></div>`);
+  $('#lc-objs').innerHTML = o.join('') || '<span class="note">No object yet</span>';
+  $('#lc-db').innerHTML = '<caption>students</caption><tr><th>id</th><th>name</th></tr>' + (lc.inDb ? `<tr><td>1</td><td>${esc(lc.dbName)}</td></tr>` : '<tr><td colspan="2" class="note">no row</td></tr>');
+  $('#lc-msg').innerHTML = m;
+}
+function managedTarget(){ return lc.copy && lc.copy.state==='managed' ? lc.copy : (lc.state==='managed'||lc.state==='removed' ? lc : null); }
+$('#lc-btns').onclick = e => { const bt=e.target.closest('button'); if(!bt) return; const b=bt.dataset.b||LCB[+bt.dataset.i]; if(b==='reset') return lcReset();
+  if(b!=='new Student()' && !lc.state) return lcDraw('<span class="bad">Create the object first.</span>');
+  switch(b){
+    case 'new Student()': lcReset(); lc.state='transient'; lcl.add('i','new Student("Rahul") → TRANSIENT'); return lcDraw('Exists in Java memory only. Not tracked. No row.');
+    case 'persist()': if(lc.state==='transient'){ lc.state='managed'; lc.pending='insert'; lcl.add('i','persist → MANAGED, INSERT scheduled'); return lcDraw('Same Java object, now managed. The INSERT may wait until flush (timing can depend on id generation).'); }
+      if(lc.state==='managed') return lcDraw('Already managed; nothing happens.');
+      return lcDraw(`<span class="bad">persist() on a ${lc.state} entity fails.</span> ${lc.state==='detached'?'Use merge() for detached state.':''}`);
+    case 'flush()': { const t=managedTarget(); if(!t && !lc.pending) { lcl.add('i','flush: nothing to send'); return lcDraw('Nothing managed and pending.'); }
+      if(lc.pending==='insert'){ lcl.add('s','insert into students (name) values (?)'); lc.inDb=true; lc.dbName=lc.name; lc.pending=null; }
+      if(lc.state==='removed'){ lcl.add('s','delete from students where id=?'); lc.inDb=false; lc.state=null; lc.obj=null; lcDraw('DELETE sent. The removed entity is gone from the context.'); lc.state='transient'; lcDraw('DELETE sent. The Java object still exists in memory (like a transient object), but its row is gone.'); return; }
+      if(t && lc.inDb && t.name!==lc.dbName){ lcl.add('s',`update students set name='${esc(t.name)}' where id=1`); lc.dbName=t.name; return lcDraw('Dirty checking found a difference from the snapshot → UPDATE.'); }
+      lcl.add('i','flush: synchronized'); return lcDraw('Pending changes sent. Still inside the transaction; not committed yet.'); }
+    case 'setName("Rohan")': { const tgt = lc.copy && lc.copy.state==='managed' && lc.state==='detached' ? lc : lc; tgt.name = tgt.name==='Rohan'?'Rahul':'Rohan';
+      return lcDraw(lc.state==='managed' ? 'Java field changed. No SQL yet. Flush will notice.' : lc.state==='detached' ? '<span class="bad">Changed a detached object.</span> Nobody is tracking it; this change won\'t be saved.' + (lc.copy?' (You changed the merge <i>argument</i>, not the managed copy.)':'') : 'Changed in memory only.'); }
+    case 'detach()': if(lc.state!=='managed') return lcDraw('Only managed entities can be detached.'); if(lc.pending==='insert'){ lc.pending=null; lcl.add('i','detach before flush: pending INSERT discarded'); } lc.state='detached'; lcl.add('i','detach → DETACHED'); return lcDraw('Still a Java object, row (if any) stays. Changes are no longer tracked.');
+    case 'merge()': if(lc.state!=='detached') return lcDraw(lc.state==='managed'?'Already managed: merge just returns it.':'merge() is for detached state.');
+      lc.copy={state:'managed', name:lc.name}; lcl.add('i','merge → returns a NEW managed instance'); if(!lc.inDb){ lc.pending='insert'; }
+      return lcDraw('The argument is <b>still detached</b>. The returned copy is managed. Use the return value.');
+    case 'remove()': if(lc.state!=='managed') return lcDraw(`<span class="bad">remove() needs a managed entity</span> (it is ${lc.state}). Load it with find() first.`);
+      if(!lc.inDb && lc.pending==='insert'){ lc.pending=null; lc.state='transient'; lcl.add('i','remove before INSERT: nothing to delete'); return lcDraw('Never written, so nothing to delete.'); }
+      lc.state='removed'; lcl.add('i','remove → REMOVED, DELETE scheduled'); return lcDraw('Marked for deletion. The DELETE runs at flush, not on this line.');
+    case 'context ends': if(lc.pending==='insert'){ lcl.add('s','insert into students (name) values (?)  (flush before commit)'); lc.inDb=true; lc.dbName=lc.name; lc.pending=null; }
+      [lc, lc.copy].forEach(t=>{ if(t && t.state==='managed' && lc.inDb && t.name!==lc.dbName){ lcl.add('s',`update students set name='${esc(t.name)}' where id=1`); lc.dbName=t.name; } });
+      if(lc.state==='removed'){ lcl.add('s','delete from students where id=?'); lc.inDb=false; lc.state='transient'; }
+      lcl.add('g','COMMIT; context closed');
+      if(lc.state==='managed') lc.state='detached'; if(lc.copy) lc.copy.state='detached';
+      return lcDraw('Flush, commit, context closes. Everything it managed is now <b>detached</b>.');
+    case 'contains()': lcl.add('g','contains(student) → '+(lc.state==='managed')); return lcDraw(`<code>entityManager.contains(student)</code> → <b>${lc.state==='managed'}</b>`);
+  } };
+lcReset();
+
+/* dirty checking */
+let dc; const dcl = logger($('#dc-log'));
+function dcReset(){ dc={snap:'Rahul', cur:'Rahul', managed:true}; dcl.clear(); dcl.add('s','select … from students where id=1'); dcDraw('Loaded and managed. Snapshot taken.'); }
+function dcDraw(m){ $('#dc-snap').innerHTML=`<b>Snapshot (what Hibernate knew)</b>name = ${esc(dc.snap)}`; $('#dc-cur').innerHTML=`<b>Current object</b>name = ${esc(dc.cur)} <span class="state" style="--c:${dc.managed?'var(--c3)':'var(--c2)'}">${dc.managed?'managed':'detached'}</span>${dc.cur!==dc.snap&&dc.managed?' <span class="state" style="--c:var(--c4)">dirty</span>':''}`; $('#dc-msg').innerHTML=m; }
+$('#dc-set').onclick=()=>{ dc.cur=$('#dc-in').value; dcDraw(dc.managed?'Changed in memory. No SQL. Flush will compare.':'Changed, but the object is detached.'); };
+$('#dc-det').onclick=()=>{ dc.managed=false; dcDraw('Detached. Dirty checking won\'t look at it any more.'); };
+$('#dc-flush').onclick=()=>{ if(!dc.managed){ dcl.add('i','flush: nothing managed'); return dcDraw('<span class="bad">No UPDATE.</span> Dirty checking applies only to managed entities.'); }
+  if(dc.cur===dc.snap){ dcl.add('i','flush: no differences'); return dcDraw('Same value as the snapshot → no state change → no UPDATE needed.'); }
+  dcl.add('s',`update students set name='${esc(dc.cur)}' where id=1`); dc.snap=dc.cur; dcDraw('Difference found → UPDATE generated. Snapshot now matches.'); };
+$('#dc-reset').onclick=dcReset; dcReset();
+
+/* flush vs commit */
+const FLS = (err) => [
+  ['Spring','BEGIN transaction'],['You','find(Student, 1)  → SELECT'],['You','setName("Rohan")'],['Hibernate','FLUSH → UPDATE students SET name=\'Rohan\''],
+  ...(err ? [['You','RuntimeException thrown'],['Spring','ROLLBACK → UPDATE undone']] : [['You','method returns'],['Spring','COMMIT → durable']])];
+let flErr=false;
+const ACTC = {Spring:'var(--c1)', You:'var(--c3)', Hibernate:'var(--c2)'};
+const flStep = stepper($('#fl-bench'), FLS(false).map((_,i)=>i), i => {
+  const L = FLS(flErr);
+  $('#fl-list').innerHTML = L.map(([a,t],k)=>`<li class="${k===i?'on':k<i?'done':''}"><span class="actor" style="--c:${ACTC[a]}">${a}</span><span>${esc(t)}</span></li>`).join('');
+  const name = i<3 ? 'Rahul' : (i>=5 && flErr) ? 'Rahul' : 'Rohan';
+  const visible = i<3 ? 'committed' : i===3||i===4 ? 'only inside this transaction' : flErr ? 'rolled back' : 'committed';
+  $('#fl-db').innerHTML = `<caption>students (row 1)</caption><tr><th>name</th><th>visible to others</th></tr><tr class="${i>=3&&i<5?'chg':''}"><td>${name}</td><td>${visible}</td></tr>`;
+  $('#fl-msg').innerHTML = i===3 ? 'The UPDATE has <b>executed</b>, but the transaction isn\'t finished.' : i===5 ? (flErr?'<span class="bad">Rollback.</span> Executed SQL is not committed SQL.':'<span class="ok">Commit.</span> Now it\'s durable.') : 'Step through.';
+}, 1300);
+$('#fl-err').onchange=()=>{ flErr=$('#fl-err').checked; flStep.reload(FLS(flErr).map((_,i)=>i)); };
+
+/* write-behind */
+function wb(t){ $('#wb-b').classList.toggle('on',!t); $('#wb-t').classList.toggle('on',t); const l=logger($('#wb-log')); l.clear();
+  const ch=['setName("A")','setName("B")','setName("C")','setEmail("c@x.com")'];
+  if(t){ ch.forEach((c,i)=>{ l.add('i','java: '+c); l.add('s','  → update students set '+(i<3?'name':'email')+'=? where id=1'); }); l.add('e','4 round trips for one final state.'); }
+  else { ch.forEach(c=>l.add('i','java: '+c+'   (recorded in context)')); l.add('g','flush:'); l.add('s','  → update students set email=?, name=? where id=1'); l.add('g','1 statement with the final state.'); } }
+$('#wb-b').onclick=()=>wb(false); $('#wb-t').onclick=()=>wb(true); wb(false);
+
+/* batch */
+let btT=null;
+$('#bt-run').onclick=()=>{ clearInterval(btT); const n=Math.max(1,+$('#bt-n').value||100), f=$('#bt-fl').checked, c=$('#bt-cl').checked;
+  let i=0, m=0, peak=0, sent=0, pend=0;
+  btT=setInterval(()=>{ for(let k=0;k<5000;k++){ i++; m++; pend++; if(i%n===0){ if(f){ sent+=pend; pend=0; } if(c){ m=0; if(!f){ pend=0; } } } peak=Math.max(peak,m); if(i>=100000) break; }
+    $('#bt-i').textContent=i.toLocaleString(); $('#bt-m').textContent=m.toLocaleString(); $('#bt-peak').textContent=peak.toLocaleString(); $('#bt-sql').textContent=sent.toLocaleString();
+    $('#bt-bar').style.width=(m/1000)+'%';
+    if(i>=100000){ clearInterval(btT); if(f) sent+=pend; $('#bt-sql').textContent=sent.toLocaleString()+(f?'':' (rest at commit)');
+      $('#bt-msg').innerHTML = c && f ? `<span class="ok">Context never held more than ${peak.toLocaleString()} entities.</span>` : !c ? `<span class="bad">All ${peak.toLocaleString()} entities stayed managed.</span> Huge memory and dirty-checking work at flush. flush() alone sends SQL but keeps them managed.` : '<span class="bad">clear() without flush() discards changes that were still pending.</span> With delayed inserts, those students would never be saved.'; } }, 30); };
+
+/* first-level cache */
+let fc; const fcl = logger($('#fc-log'));
+function fcReset(){ fc={tx:1, ctx:{}, db:{1:'Rahul',2:'Priya'}, n:0, obj:0}; fcl.clear(); fcDraw(); }
+function fcDraw(){ $('#fc-txn').textContent='transaction '+fc.tx; $('#fc-n').textContent=fc.n;
+  const ks=Object.keys(fc.ctx); $('#fc-ctx').innerHTML = ks.length? ks.map(k=>`<div class="ent" style="--c:var(--c3)"><b>(Student, ${k})</b>name = ${fc.ctx[k].name}<span class="what">object #${fc.ctx[k].o}</span>${fc.ctx[k].name!==fc.db[k]?' <span class="state" style="--c:var(--c4)">stale</span>':''}</div>`).join('') : '<span class="note">empty</span>'; }
+function fcFind(id){ if(fc.ctx[id]){ fcl.add('g',`find(Student, ${id}) → cache hit, object #${fc.ctx[id].o}, no SQL`); }
+  else { fc.n++; fc.obj++; fc.ctx[id]={name:fc.db[id], o:fc.obj}; fcl.add('s',`find(Student, ${id}) → miss → select … where id=${id} → object #${fc.obj}`); } fcDraw(); }
+document.querySelectorAll('[data-fc]').forEach(b=>b.onclick=()=>fcFind(b.dataset.fc));
+$('#fc-q').onclick=()=>{ fc.n++; fcl.add('s','select s from Student s → SQL runs anyway'); [1,2].forEach(id=>{ if(fc.ctx[id]) fcl.add('i',`  row ${id}: already managed → returns object #${fc.ctx[id].o} (keeps its in-memory state)`); else { fc.obj++; fc.ctx[id]={name:fc.db[id],o:fc.obj}; fcl.add('i',`  row ${id}: new object #${fc.obj}`); } }); fcDraw(); };
+$('#fc-det').onclick=()=>{ if(fc.ctx[1]){ delete fc.ctx[1]; fcl.add('i','detach(student 1): only that one leaves'); } else fcl.add('i','student 1 is not in the context'); fcDraw(); };
+$('#fc-clr').onclick=()=>{ fc.ctx={}; fcl.add('i','clear(): every entity detached'); fcDraw(); };
+$('#fc-ext').onclick=()=>{ fc.db[1]='Aman'; fcl.add('e','another process committed name=Aman for row 1. The managed object doesn\'t know.'); fcDraw(); };
+$('#fc-ref').onclick=()=>{ if(!fc.ctx[1]){ fcl.add('i','refresh needs a managed entity; find it first'); return; } fc.n++; fc.ctx[1].name=fc.db[1]; fcl.add('s','refresh → select … where id=1 → state replaced'); fcDraw(); };
+$('#fc-tx').onclick=()=>{ fc.tx++; fc.ctx={}; fcl.add('g',`— transaction ${fc.tx}: brand-new persistence context —`); fcDraw(); };
+fcReset();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
