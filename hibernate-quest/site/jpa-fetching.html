@@ -437,7 +437,7 @@ private List&lt;OrderItem&gt; items;</code></pre>
   <h2>Count the hidden queries</h2>
   <p class="prose">1 query loads the parents, then 1 more per parent when the loop touches a lazy relationship. Change the numbers and the strategy. Notice the first-level cache: once a department is managed, other students reuse it, so the real count can be <b>1 + distinct departments</b>, not 1 + N. Still a fetch-plan problem.</p>
   <div class="bench">
-    <div class="toolbar"><button class="btn sm on" id="n-to1" type="button">students → department (to-one)</button><button class="btn sm" id="n-tom" type="button">departments → students (to-many)</button></div>
+    <div class="toolbar"><button class="btn sm on" id="n-to1" type="button">students → department (to-one)</button><button class="btn sm" id="n-tom" type="button">departments → students (to-many)</button><button class="btn sm" id="n-reset" type="button">↺ Reset</button></div>
     <div class="toolbar"><label class="ck"><span id="n-lab1">students</span> <input type="number" id="n-n" value="100" min="1" max="5000"></label><label class="ck"><span id="n-lab2">distinct departments</span> <input type="number" id="n-k" value="3" min="1"></label>
       <select id="n-mode"><option value="lazy">LAZY, plain findAll()</option><option value="graph">LAZY + @EntityGraph</option><option value="nolook">LAZY, loop never touches the relation</option></select></div>
     <div class="stats4"><div><b id="n-q">0</b><span>SQL statements</span></div><div><b id="n-par">1</b><span>parent query</span></div><div><b id="n-ex">0</b><span>extra queries</span></div><div><b id="n-naive">0</b><span>naive "1 + N"</span></div></div>
@@ -694,7 +694,9 @@ function n1(){ const N=Math.max(1,Math.min(5000,+$('#n-n').value||1)), K=Math.ma
     else l.add('g','Collections never touched. No extra SQL.');
   }
   $('#n-q').textContent=1+extra; $('#n-ex').textContent=extra; $('#n-naive').textContent=(mode==='lazy'?'1 + '+N:'—'); }
-['n-n','n-k','n-mode'].forEach(i=>$('#'+i).oninput=n1); $('#n-to1').onclick=()=>{nTo1=true;n1();}; $('#n-tom').onclick=()=>{nTo1=false;n1();}; n1();
+['n-n','n-k','n-mode'].forEach(i=>$('#'+i).oninput=n1); $('#n-to1').onclick=()=>{nTo1=true;n1();}; $('#n-tom').onclick=()=>{nTo1=false;n1();};
+$('#n-reset').onclick=()=>{ nTo1=true; $('#n-n').value=100; $('#n-k').value=3; $('#n-mode').value='lazy'; n1(); };   // back to the opening state
+n1();
 
 /* entity graph builder */
 function eg(){ const a=[...document.querySelectorAll('.eg:checked')].map(c=>c.value);
